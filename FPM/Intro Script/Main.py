@@ -53,6 +53,8 @@ def main():
     composite(stack)
     create_table(initial, final)
     n = 1
+
+    #Create contact table
     while n <= len(stack):
         p("*new_cbody mesh")
         p("*contact_option state:solid")
