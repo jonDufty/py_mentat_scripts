@@ -1,0 +1,358 @@
+PLY 19 Fiber Placement Operation.1
+// COURSE 1 4
+_pIPostProc->NewBand( 1 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 477.43255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 477.43255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 477.43255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 477.43255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 1 );
+// COURSE 2 4
+_pIPostProc->NewBand( 2 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 452.03255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 452.03255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 452.03255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 452.03255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 2 );
+// COURSE 3 4
+_pIPostProc->NewBand( 3 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 426.63255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 426.63255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 426.63255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 426.63255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 3 );
+// COURSE 4 4
+_pIPostProc->NewBand( 4 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 401.23255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 401.23255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 401.23255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 401.23255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 4 );
+// COURSE 5 4
+_pIPostProc->NewBand( 5 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 375.83255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 375.83255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 375.83255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 375.83255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 5 );
+// COURSE 6 4
+_pIPostProc->NewBand( 6 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 350.43255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 350.43255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 350.43255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 350.43255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 6 );
+// COURSE 7 4
+_pIPostProc->NewBand( 7 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 325.03255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 325.03255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 325.03255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 325.03255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 7 );
+// COURSE 8 4
+_pIPostProc->NewBand( 8 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 299.63255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 299.63255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 299.63255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 299.63255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 8 );
+// COURSE 9 4
+_pIPostProc->NewBand( 9 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 274.23255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 274.23255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 274.23255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 274.23255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 9 );
+// COURSE 10 4
+_pIPostProc->NewBand( 10 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 248.83255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 248.83255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 248.83255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 248.83255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 10 );
+// COURSE 11 4
+_pIPostProc->NewBand( 11 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 223.43255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 223.43255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 223.43255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 223.43255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 11 );
+// COURSE 12 4
+_pIPostProc->NewBand( 12 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 198.03255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 198.03255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 198.03255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 198.03255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 12 );
+// COURSE 13 4
+_pIPostProc->NewBand( 13 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 172.63255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 172.63255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 172.63255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 172.63255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 13 );
+// COURSE 14 4
+_pIPostProc->NewBand( 14 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 147.23255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 147.23255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 147.23255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 147.23255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 14 );
+// COURSE 15 4
+_pIPostProc->NewBand( 15 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 121.83255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 121.83255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 121.83255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 121.83255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 15 );
+// COURSE 16 4
+_pIPostProc->NewBand( 16 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 96.43255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 96.43255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 96.43255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 96.43255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 16 );
+// COURSE 17 4
+_pIPostProc->NewBand( 17 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 71.03255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 71.03255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 71.03255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 71.03255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 17 );
+// COURSE 18 4
+_pIPostProc->NewBand( 18 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 45.63255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 45.63255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 45.63255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 45.63255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->AddTowStartStop( 4L, 20, 230 );
+_pIPostProc->AddTowStartStop( 8L, 20, 230 );
+_pIPostProc->GenerateBand( 18 );
+// COURSE 19 4
+_pIPostProc->NewBand( 19 );
+//rollInTraj:
+//rollInPointIndex:0
+//nPointsOnRollIn:2
+_pIPostProc->AddPoint2( 0, 20.23255, 0.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 0.00000, 500.00000, 0.0 );
+//Traj 2:
+ // dist=20
+_pIPostProc->AddPoint2( 1, 20.23255, 20.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 20.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 2, 20.23255, 125.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 125.00000, 500.00000, 0.0 );
+ // dist=105
+_pIPostProc->AddPoint2( 3, 20.23255, 230.00000, 11.50000, 0.00000, 0.00000, -1.00000, -0.00000, 1.00000, 0.00000, 0, 230.00000, 500.00000, 0.0 );
+//rollOutTraj:
+_pIPostProc->AddTowStartStop( 1L, 20, 230 );
+_pIPostProc->AddTowStartStop( 2L, 20, 230 );
+_pIPostProc->GenerateBand( 19 );
