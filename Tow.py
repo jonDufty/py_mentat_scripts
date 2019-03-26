@@ -12,7 +12,7 @@ class Tow():
         self.w = tow_w
         self.t = tow_t
         self.num_el = num_el
-        self._el_index = self._gen_index()
+        self._eid = self._gen_index()
 
     def _gen_id(self):
         Tow.t_id += 1
@@ -22,6 +22,9 @@ class Tow():
         index = Tow.e_id
         Tow.e_id += self.num_el
         return index
+
+    def name(self):
+        return "".join(['tow', str(self._id)])
 
     def add_point(self, point):
         if point is None:
@@ -38,18 +41,7 @@ class Tow():
             vec = Vector(x,y,z)
             return vec.magnitude()
 
-    #Take tow path and offset in both directions perpendicular to direction vector
-    def offset_points(self):
-        x = []
-        y = []
-        for p in self.points:
-            off_x = p.offset_pt_x
-            off_x.scale(self.w)
-            off_y = p.offset_pt_y
-            off_y.scale(self.w)
-            x.append(p.translate(off_x))
-            y.append(p.translate(off_y))
-        return [x,y]
+    #Take tow path and offset in both directions perpendicular to direction vector    
 
     # def create_surface(self):
 

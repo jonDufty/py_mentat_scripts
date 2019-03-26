@@ -21,7 +21,7 @@ with open('Majestic/tow_sample','r') as m:
     for line in m:
         
         if new_tow in line:
-            print("Create New Tow")
+            # print("Create New Tow")
             #Create a new tow
             tows.append(Tow(tow_width,tow_t,element_size))
 
@@ -32,5 +32,7 @@ with open('Majestic/tow_sample','r') as m:
             #add points to end tow
             tows[-1].add_point(import_point(v))
 
-for tow in tows:
-    print(tow.points[0].coord.i)
+# for tow in tows:
+    # print(tow.points[0].coord.i)
+
+

@@ -14,16 +14,6 @@ class Point:
         Point.pt_id += 1
         return Point.pt_id
 
-    def offset_pt_x(self):
-        off_vec = self.dir
-        off_vec.i = (-1)*off_vec.i
-        return off_vec
-
-    def offset_pt_y(self):
-        off_vec = self.dir
-        off_vec.j = (-1)*off_vec.j
-        return off_vec
-
     def __str__(self):
         return(f"id = {self._id} x={self.coord.i}, y={self.coord.j}")
 
@@ -33,6 +23,10 @@ class Point:
         y = self.coord.j + v.j
         z = self.coord.k + v.k
         return Point(Vector(x,y,z), self.normal, self.dir)
+
+    def z_offset(self, offset):
+        normal_vec = self.normal.scale_vec(offset)
+        self.coord = self.coord.translate(normal_vec)
 
 
     
