@@ -18,15 +18,24 @@ class Point:
         return(f"id = {self._id} x={self.coord.i}, y={self.coord.j}")
 
     #Copies a point by translating by a given coordinate
-    def translate(self, v):
-        x = self.coord.i + v.i
-        y = self.coord.j + v.j
-        z = self.coord.k + v.k
-        return Point(Vector(x,y,z), self.normal, self.dir)
+    def copy(self, v):
+        coord = self.coord.add(v)
+        return Point(coord, self.normal, self.dir)
+
+    def _ortho_offset(self, offset):
+        if offset > 0:
+            ortho = self.normal.orthogonal(self.dir)
+        elif offset < 0:
+            ortho = self.dir.orthogonal(self.normal)
+        ortho.scale(abs(offset))
+        return self.copy(ortho)
 
     def z_offset(self, offset):
-        normal_vec = self.normal.scale_vec(offset)
+        normal_vec = self.normal.scale(offset)
         self.coord = self.coord.translate(normal_vec)
+
+    def send_coord(self):
+        return " ".join([str(self.coord.i), str(self.coord.j), str(self.coord.k)])
 
 
     
