@@ -3,28 +3,24 @@ import numpy as np
 
 class Vector:
     def __init__(self,i,j,k):
-        self.i = i
-        self.j = j
-        self.k = k
+        self._vec = np.array([i,j,k])
+
+    @property
+    def vec(self):
+        return self._vec
 
     def magnitude(self):
-        return math.sqrt(self.i**2 + self.j**2 + self.k**2)
-
-    #Returns a new vector
-    def add(self, vec):
-        i = self.i + vec.i
-        j = self.j + vec.j
-        k = self.k + vec.k
-        return Vector(i,j,k)
-
+        return np.linalg.norm(self._vec)
+    
     # Modifies original vector
     def scale(self,scale):
-        self.i *= scale
-        self.j *= scale
-        self.k *= scale
+        self._vec *= scale
 
-    def orthogonal(self,vec):
-        a = [self.i, self.j, self.k]
-        b = [vec.i, vec.j, vec.k]
-        c = np.cross(a,b)
-        return Vector(c[0], c[1], c[2])
+    # Move to Import Files
+    def cross(self,vec):
+        return np.cross(self._vec, vec)
+'''
+    #Returns a new vector
+    def add(self, vec):
+        return self._vec + vec
+'''

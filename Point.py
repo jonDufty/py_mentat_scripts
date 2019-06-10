@@ -14,21 +14,21 @@ class Point:
         Point.pt_id += 1
         return Point.pt_id
 
-    def __str__(self):
-        return(f"id = {self._id} x={self.coord.i}, y={self.coord.j}")
-
     #Copies a point by translating by a given coordinate
-    def copy(self, v):
-        coord = self.coord.add(v)
+    def copy_translate(self, v):
+        coord = self.coord + v
         return Point(coord, self.normal, self.dir)
+    
+    def move_translate(self, v):
+        self.coord += v
 
-    def _ortho_offset(self, offset):
+    def ortho_offset(self, offset):
         if offset > 0:
-            ortho = self.normal.orthogonal(self.dir)
+            ortho = self.normal.cross(self.dir)
         elif offset < 0:
-            ortho = self.dir.orthogonal(self.normal)
+            ortho = self.dir.cross(self.normal)
         ortho.scale(abs(offset))
-        return self.copy(ortho)
+        return self.copy_translate(ortho)
 
     def z_offset(self, offset):
         normal_vec = self.normal.scale(offset)
