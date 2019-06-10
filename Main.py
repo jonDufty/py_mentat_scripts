@@ -1,6 +1,5 @@
 # from py_mentat import *
-from Tow import Tow
-from Point import Point
+from TowMentat import *
 import pickle
 import os
 

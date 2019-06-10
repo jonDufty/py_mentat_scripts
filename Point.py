@@ -19,9 +19,11 @@ class Point:
         coord = self.coord + v
         return Point(coord, self.normal, self.dir)
     
+    #Moves (no copy) a point by translating by a given coordinate
     def move_translate(self, v):
         self.coord += v
 
+    # Creates new point for L/R offset
     def ortho_offset(self, offset):
         if offset > 0:
             ortho = self.normal.cross(self.dir)
@@ -30,12 +32,14 @@ class Point:
         ortho.scale(abs(offset))
         return self.copy_translate(ortho)
 
+    # Moves (no copy) along the z-offset direction
     def z_offset(self, offset):
         normal_vec = self.normal.scale(offset)
-        self.coord = self.coord.translate(normal_vec)
-
+        self.coord = self.move_translate(normal_vec)
+''' 
     def send_coord(self):
         return " ".join([str(self.coord.i), str(self.coord.j), str(self.coord.k)])
 
+'''
 
     
