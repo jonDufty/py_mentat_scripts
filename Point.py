@@ -1,5 +1,6 @@
 #Point class
 from Vector import Vector
+import numpy as np
 
 class Point:
     pt_id = 0
@@ -16,7 +17,7 @@ class Point:
 
     #Copies a point by translating by a given coordinate
     def copy_translate(self, v):
-        coord = self.coord + v
+        coord = self.coord.vec + v
         return Point(coord, self.normal, self.dir)
     
     #Moves (no copy) a point by translating by a given coordinate
@@ -27,9 +28,10 @@ class Point:
     def ortho_offset(self, offset):
         if offset > 0:
             ortho = self.normal.cross(self.dir)
+            # ortho = np.cross(self.dir, self.normal)
         elif offset < 0:
             ortho = self.dir.cross(self.normal)
-        ortho.scale(abs(offset))
+        ortho *= offset
         return self.copy_translate(ortho)
 
     # Moves (no copy) along the z-offset direction

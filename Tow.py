@@ -7,13 +7,13 @@ class Tow():
     t_id = 0
     e_id = 1
 
-    def __init__(self, tow_w, tow_t, num_el=10, el_size=1, points=[]):
+    def __init__(self, tow_w, tow_t, num_el=10, el_size=1):
         self._id = self._gen_id()
-        self.points = points
+        self.points = []
         self.w = tow_w
         self.t = tow_t
-        self.L = self._offset(self.w)   #Might remove later
-        self.R = self._offset(-self.w)  #Might remove later
+        self.L = [] #self._offset(self.w)   #Might remove later
+        self.R = [] #self._offset(-self.w)  #Might remove later
         self.num_el = num_el
         self.el_size = el_size          #Remove later most likely
         self._eid = self._gen_index()   #Keep for now, will probably remove later

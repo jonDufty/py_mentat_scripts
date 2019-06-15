@@ -3,7 +3,7 @@ import numpy as np
 
 class Vector:
     def __init__(self,i,j,k):
-        self._vec = np.array([i,j,k])
+        self._vec = np.array([i,j,k], dtype='f')
 
     @property
     def vec(self):
@@ -18,7 +18,9 @@ class Vector:
 
     # Move to Import Files
     def cross(self,vec):
-        return np.cross(self._vec, vec)
+        a = self._vec
+        b = vec.vec
+        return np.cross(a, b)
 '''
     #Returns a new vector
     def add(self, vec):
