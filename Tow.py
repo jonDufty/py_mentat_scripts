@@ -7,7 +7,7 @@ class Tow():
     t_id = 0
     e_id = 1
 
-    def __init__(self, tow_w, tow_t, num_el=10, el_size=1):
+    def __init__(self, tow_w, tow_t, num_el=10, el_size=1, z_off=0):
         self._id = self._gen_id()
         self.points = []
         self.w = tow_w
@@ -17,6 +17,7 @@ class Tow():
         self.num_el = num_el
         self.el_size = el_size          #Remove later most likely
         self._eid = self._gen_index()   #Keep for now, will probably remove later
+        self.z = z_off
 
     def _gen_id(self):
         Tow.t_id += 1
@@ -42,13 +43,17 @@ class Tow():
         for p in self.points:
             self.L.append(p.ortho_offset(w))
             self.R.append(p.ortho_offset(-w))
+
+    def z_offset(self):
+        for p in self.points:
+            p.z_offset(self.t)
             
     # Calculate total length of the tow
     def length(self):
         l = 0
-        for i in range(len(self.points)):
-            dif = self.points[i+1].coord - self.points[i].coord
-            l += dif.magnitude()
+        for i in range(len(self.points)-1):
+            dif = self.points[i+1].coord.vec - self.points[i].coord.vec
+            l += np.linalg.norm(dif)
         return l
               
         

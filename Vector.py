@@ -21,8 +21,4 @@ class Vector:
         a = self._vec
         b = vec.vec
         return np.cross(a, b)
-'''
-    #Returns a new vector
-    def add(self, vec):
-        return self._vec + vec
-'''
+
