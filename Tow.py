@@ -46,7 +46,7 @@ class Tow():
 
     def z_offset(self):
         for p in self.points:
-            p.z_offset(self.t)
+            p.z_offset(self.t*self.z)
             
     # Calculate total length of the tow
     def length(self):

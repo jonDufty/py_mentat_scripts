@@ -94,12 +94,6 @@ def create_tow_shell(tow):
     curve_r = generate_curve(tow.pts_R)
 	
     
-    # filling gaps for offset
-    # p("*set_duplicate_translation z 10")
-    # p("*set_duplicate_repitions 1")
-    # p("*duplicate_curves")
-    # p("*all_existing")
-    
     # create surface using two guide curves
     p("*set_surface_type skin")
     p("*add_surfaces")

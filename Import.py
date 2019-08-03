@@ -1,6 +1,6 @@
 import pickle
 import sys
-
+import FPM.ImportFPM_stack as fpm
 from TowMentat import *
 from Vector import Vector
 from Point import Point
@@ -25,7 +25,6 @@ def main(tows):
         
         # Interpolate for additional points in tow paths
         d =  t.length()/len(t.points)
-        # print("d = ", d, "p = ", len(t.points))
         
         """ if t.length()/len(t.points) > 0.5*t.w:
             n = int(t.length()/0.5*t.w)
@@ -34,8 +33,9 @@ def main(tows):
             t.L = interpolate_tow_points(t.L, n)
             t.R = interpolate_tow_points(t.R, n)
          """
-        plot_points(t.points, ax)
-        # plot_surface(t.L,t.R, ax)
+
+        # plot_points(t.points, ax)
+        plot_surface(t.L,t.R, ax)
         # plot_offset(t.L,t.R, ax)
 
         '''Apply Z offset'''
@@ -52,29 +52,53 @@ def main(tows):
 def create_mentat_tows(tows):
     m_tows = []
     tow_idx = 1
-    pt_idx = 1
+    length = 75
 
     for t in tows:
         m_points = []
         m_points_R = []
         m_points_L = []
-        m_in_L = []
-        m_in_R = []
 
         for i in range(len(t.points)):
             m_points.append(Point_Mentat(t.points[i].coord.vec.tolist()))
             m_points_L.append(Point_Mentat(t.L[i].tolist()))
             m_points_R.append(Point_Mentat(t.R[i].tolist()))
-            m_in_L.append(pt_idx)
-            m_in_R.append(pt_idx + 1)
-            pt_idx += 2
 
-        new_tow = Tow_Mentat(tow_idx, m_points, m_points_L, m_in_L, m_points_R, m_in_R, t.t, t.w)
+        new_tow = Tow_Mentat(tow_idx, m_points, m_points_L, m_points_R, t.t, t.w)
+        new_tow = batch_tows(new_tow, length)
+        print_tow_batch(new_tow)
         m_tows.append(new_tow)
         tow_idx += 1
 
     return m_tows   
 
+def batch_tows(tow, length):
+    if len(tow.pts) < length:
+        return [tow]
+
+    batch = []
+    i = 0
+    while i + length < len(tow.pts):
+        p = tow.pts[i:i+length]
+        l = tow.pts_L[i:i+length]
+        r = tow.pts_R[i:i+length]
+        new = Tow_Mentat(tow._id, p,l,r,tow.t,tow.w)
+        batch.append(new)
+        i += length - 1
+    # Add remaining points from end of tow
+    p = tow.pts[i:]
+    l = tow.pts_L[i:]
+    r = tow.pts_R[i:]
+    new = Tow_Mentat(tow._id, p,l,r,tow.t,tow.w)
+    batch.append(new)
+
+    return batch
+
+
+def print_tow_batch(tow):
+    print(f"batches = {len(tow)}")
+    for t in tow:
+        print(f"tow {t._id}", f"length = {len(t.pts)}")
 
 
 # Interpolate for additional points between each curve
@@ -156,12 +180,12 @@ def plot_offset(L, R, ax):
 
 
 if __name__ == '__main__':
-    # if len(sys.argv) is 1:
-    #     exit("Specify file name to import")
-    # fn = 
+    if len(sys.argv) is 1:
+        exit("Specify file name to import")
     # from Majestic.ImportMaj import tows
     # from FPM.ImportFPM import tows
-    from FPM.ImportFPM_stack import tows
+    geom = sys.argv[1]
+    tows = fpm.get_tows(geom)
 
     main(tows)
 

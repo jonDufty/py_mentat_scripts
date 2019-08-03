@@ -1,13 +1,11 @@
 # Isolated tow class to accomodate py_mentat modules
 
 class Tow_Mentat(object):
-    def __init__(self,id, coords, off_L, in_L, off_R, in_R, t, w):
+    def __init__(self,id, coords, off_L, off_R, t, w):
         self._id = id
         self.pts = coords
         self.pts_L = off_L
-        self.index_L = in_L
         self.pts_R = off_R
-        self.index_R = in_R
         self.t = t
         self.w = w
 
