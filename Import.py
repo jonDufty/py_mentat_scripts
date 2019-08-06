@@ -1,6 +1,7 @@
 import pickle
 import sys
 import FPM.ImportFPM_stack as fpm
+# import FPM.ImportFPM as fpm
 from TowMentat import *
 from Vector import Vector
 from Point import Point
@@ -44,7 +45,7 @@ def main(tows):
     plt.show()
         
     m_tows = create_mentat_tows(tows)
-    save_tows(m_tows)
+    return m_tows
 
 
 
@@ -66,7 +67,6 @@ def create_mentat_tows(tows):
 
         new_tow = Tow_Mentat(tow_idx, m_points, m_points_L, m_points_R, t.t, t.w)
         new_tow = batch_tows(new_tow, length)
-        print_tow_batch(new_tow)
         m_tows.append(new_tow)
         tow_idx += 1
 
@@ -124,10 +124,13 @@ def interpolate_tow_points(coords, n):
 
 
 # Dump new tow data
-def save_tows(tows):
-    file_name = 'tows.dat'
+def save_tows(tows, name):
+    file_end = name + ".dat"
+    file_name = '/'.join(['dat_files','batched',file_end])
+    print(f"...saving at {file_name}")
     with open(file_name, 'wb') as f:
         pickle.dump(tows, f)
+    print("save successful")
 
 
 def plot_spline(tck):
@@ -187,7 +190,8 @@ if __name__ == '__main__':
     geom = sys.argv[1]
     tows = fpm.get_tows(geom)
 
-    main(tows)
+    mtows = main(tows)
+    save_tows(mtows, sys.argv[1])
 
 
 
