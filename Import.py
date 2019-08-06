@@ -1,6 +1,7 @@
 import pickle
 import sys
 import FPM.ImportFPM_stack as fpm
+# import FPM.ImportFPM as fpm
 from TowMentat import *
 from Vector import Vector
 from Point import Point
@@ -125,7 +126,7 @@ def interpolate_tow_points(coords, n):
 
 # Dump new tow data
 def save_tows(tows):
-    file_name = 'tows.dat'
+    file_name = 'dat_files/batched/panel_double.dat'
     with open(file_name, 'wb') as f:
         pickle.dump(tows, f)
 

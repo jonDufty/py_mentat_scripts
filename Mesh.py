@@ -13,8 +13,11 @@ class Mesh(Trimesh):
 
 def intersect_ray(coord, ray, vertices):
     """ 
-    Implementation of Moller-trombone ray
+    Implementation of Moller-trombore ray
     intersection algorithm.
+    Inputs: Coord - location of ray
+            Ray - direction vector of ray
+            Vertices - 1x3 array of 3 vertices of triangle
     """
     # Find vectors 
     # print(f"v0 = {vertices[0]}\n v1 = {vertices[1]}\n v2 = {vertices[2]}\n")

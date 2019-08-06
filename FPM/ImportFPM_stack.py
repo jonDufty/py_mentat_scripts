@@ -28,7 +28,7 @@ def start_line(file):
 def get_tows(geom):
     tows = []
     tow_width = 6.35/2
-    tow_t = 1.0
+    tow_t = 0.1
     num_el = 20
     i = 0
     # directory = "FPM/flat_strips/1"
