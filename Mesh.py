@@ -2,14 +2,31 @@ from trimesh import Trimesh
 import numpy as np
 
 """ 
-Wrapper class for trimesh with custom functions
+Wrapper class for trimesh with custom functions and bookeeping of global mesh
 """
-class Mesh(Trimesh):
-    def __init__(self, vertices=None, faces=None, face_normals=None, vertex_normals=None, face_colors=None, vertex_colors=None, metadata=None, process=True, validate=False, use_embree=True, initial_cache={}, visual=None, **kwargs):
-        super().__init__(vertices=vertices, faces=faces, face_normals=face_normals, vertex_normals=vertex_normals, face_colors=face_colors, vertex_colors=vertex_colors, metadata=metadata, process=process, validate=validate, use_embree=use_embree, initial_cache=initial_cache, visual=visual, **kwargs)
-        z_off = None
+class Mesh():
+    def __init__(self, mesh):
+        self.mesh = mesh
+        self.z_off = self.__init_z()
+
+    def __init_z(self):
+        return np.empty(len(self.mesh.faces))
 
 
+def adjacent(mesh,face):
+    faces = []
+    for a in list(mesh.face_adjacency):
+        if face in a:
+            faces.append(a[a!=face][0])
+    return np.array(faces)
+
+def subdivide_it(mesh, min_length):
+        new_mesh = mesh
+        while(min(new_mesh.edges_unique_length) > min_length):
+            print(f"length = {min(new_mesh.edges_unique_length)} ... subdividing...")
+            new_mesh = new_mesh.subdivide()
+            print(len(new_mesh.faces))
+        return new_mesh
 
 def intersect_ray(coord, ray, vertices):
     """ 
