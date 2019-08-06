@@ -7,24 +7,22 @@ import os
 def main():
 
 	tows = load_tows()
-	'''
+	
 	i = 1
-	for t in tows[51:60]:
-		if i > 30:
-			break
+	for t in tows[0:1]:
 		create_tow_shell(t)
 		i += 1
-	'''
-	create_tow_shell(tows[7])
+	
+	#create_tow_shell(tows[0])
 	print("Created Tow Shells")
 
 
 
 def load_tows():
 	cwd = os.getcwd()
-	f = "flat_4.dat"
+	f = "batched\\cylinder_all.dat"
 	file_name = "\\".join([cwd,'dat_files',f])
-	# file_name = "/".join([cwd,'tows.dat'])
+	# file_name = "/".join([cwd,'tows.dat']) #for linux FS
 	with open(file_name,'rb') as f:
 		tows = pickle.load(f)
 	return tows
@@ -54,89 +52,84 @@ def generate_curve(pts):
 	return str(id)	
 
 
-def generate_surf(id,L, Li, R, Ri):
-    
-	# Find index of points generated
-    p("*add_points")
-    for i in range(len(L)):
-        generate_points(L[i])
-        generate_points(R[i])
-    
-    pts_L = [str(i) for i in Li]
-    pts_L = " ".join(pts_L)
-    pts_R = [str(i) for i in Ri]
-    pts_R = " ".join(pts_R)
-    
-    # Form curve
-    p("*set_curve_type polyline")
-    p("*add_curves")
-    p(pts_L)
-    p("#")
-    lc = int(py_get_float("ncurves()"))
-    
-    p("*set_curve_type polyline")
-    p("*add_curves")
-    p(pts_R)
-    p("#")
-    rc = int(py_get_float("ncurves()"))
-    
-    return [str(lc), str(rc)]
 
 def generate_elements(surf_name, n_elements):
     pass
 
 
-def create_tow_shell(tow):
-    # Generate curves from points on L,R of tow path
-    #surf = generate_surf(tow._id, tow.pts_L, tow.index_L, tow.pts_R, tow.index_R)
-    #curve_r = generate_curves(tow.pts_R, tow.index_R)
-    curve_l = generate_curve(tow.pts_L)
-    curve_r = generate_curve(tow.pts_R)
+def create_tow_shell(tow_list):
+
+	# el_size = float((tow_list.w)) #change when batched
+	el_size = float((tow_list[0].w)) #change when batched
+	print(el_size)
+	# surf_set = "".join(["surf",str(tow_list._id)])
+	surf_set = "".join(["surf",str(tow_list[0]._id)])
+	print(surf_set)
+
+	for tow in tow_list:
+		# Generate curves from points on L,R of tow path
+		curve_l = generate_curve(tow.pts_L)
+		curve_r = generate_curve(tow.pts_R)
+		#curve_f = generate_curve([tow.pts_L[0], tow.pts_R[0]])
+		#curve_r = generate_curve([tow.pts_L[-1], tow.pts_R[-1]])
+			
+		# create surface using two guide curves
+		p("*set_surface_type skin")
+		p("*set_trim_new_surfs y")
+		p("*add_surfaces")
+		p("%s %s %s" % (curve_l, curve_r, '#'))
+
+		# Store surface in set (just in case)
+		# n_surf = int(py_get_float("nsurfaces()"))
+		# p("*store_surfaces")
+		# p(surf_set)
+		# p(str(n_surf))
+		# p("#")
+
 	
+	p("@set($convert_entities,surfaces)")
+	p("@set($convert_surfaces_method,surface_faceted)")
+	p("*set_curve_div_type_fix")
+	p("*set_curve_div_type_fix_avgl")
+	p("*set_curve_div_avgl %s" % str(el_size))
+	p("*apply_curve_divisions")
+	p("all_existing")
+	p("*surface_faceted")
+	p("all_existing") 
+	p("#")
+	return
+
+	p("*renumber_surfaces")
+	p("@set($automesh_surface_desc,facets)")
+	p("@set($automesh_surface_family,mixed)")
+	p("*pt_set_element_size %s" % str(el_size))
+	p("*pt_quadmesh_surf")
+	p("all_existing")
+
     
-    # create surface using two guide curves
-    p("*set_surface_type skin")
-    p("*add_surfaces")
-    p("%s %s %s" % (curve_l, curve_r, '#'))
-    #p("%s %s %s" % (surf[0], surf[1], '#'))
+	# Create set for tow
+	p("*select_method_flood")
+	p("*select_elements")
+	print("n_elem = ", py_get_int("nelements()"))
+	p(str(py_get_int("nelements()")))
+	p("*store_elements")
+	p(tow.name())
+	p("*all_selected")
 
-    # Store surface in set (just in case)
-    p("*store_surfaces")
-    p("surf%s" % str(tow._id))
-    p(str(tow._id))
-
-    '''
-    # Convert surface into elements
-    n_div = len(tow.pts_L)
-    p("*set_convert_uvdiv u %s" % n_div)
-    p("*set_convert_uvdiv v %s" % 2)
-    p("*convert_surfaces")
-    p(" ".join([str(tow._id),"#"]))
-
-    # Create set for tow
-    n_el = int(py_get_float("nelements()"))
-    p("*select_method_flood")
-    p("*select_elements")
-    p(str(n_el))
-    p("*store_elements")
-    p(tow.name())
-    p("*all_selected")
-
-    # Specify geometry for elements
-    p("*new_geometry")
-    p("*geometry_type mech_three_shell")
-    p("*geometry_param thick %f" %tow.t)
-    p("*add_geometry_elements")
-    p(tow.name())
-    '''
+	p("*clear_geometry")
+	p("select_clear")
+	
+	# Specify geometry for elements
+	p("*new_geometry")
+	p("*geometry_type mech_three_shell")
+	p("*geometry_param thick %f" %tow.t)
+	p("*add_geometry_elements")
+	p(tow.name())
 
 
 def p(s):
     #print(s)
     py_send(s)
-
-def py_get_int(s):
-    return len(s)
 
 
 if __name__ == "__main__":
