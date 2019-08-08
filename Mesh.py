@@ -13,6 +13,21 @@ class Mesh():
         return np.empty(len(self.mesh.faces))
 
 
+def tow_mesh(tow):
+    vertices = []
+    mesh = Trimesh()
+    for i in range(len(tow.points)-1):
+        v1 = tow.L[i]
+        v2 = tow.L[i+1]
+        v3 = tow.R[i+1]
+        v4 = tow.R[i]
+        mesh_segment = Trimesh(vertices=[v1,v2,v3,v4], faces = [[0,1,2,3]])
+        mesh = mesh.__add__(mesh_segment)
+    return mesh
+        
+
+
+
 def adjacent(mesh,face):
     faces = []
     for a in list(mesh.face_adjacency):

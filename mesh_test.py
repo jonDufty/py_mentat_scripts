@@ -1,17 +1,11 @@
 import pickle
-from Mesh import intersect_ray, subdivide_it
+from Mesh import *
 import trimesh
 # from trimesh import remesh, bounds, creation, ray
 import pyglet
 # import stl
 import numpy as np
 
-def adjacent(mesh,face):
-    faces = []
-    for a in list(mesh.face_adjacency):
-        if face in a:
-            faces.append(a[a!=face][0])
-    return np.array(faces)
 
 with open("tows.dat", 'rb') as fp:
     tows = pickle.load(fp)
@@ -24,7 +18,7 @@ with open("tows.dat", 'rb') as fp:
 mesh = trimesh.Trimesh(vertices=[[500,-100,25.4],[900,-100,25.4],[900,100,25.4],[500,100,25.3]],
                         faces = [[0,1,2,3]])
 
-mesh = subdivide_it(mesh,10)
+mesh = subdivide_it(mesh,20)
 
 # print("mesh", mesh.faces, "\n\n")
 # print("mesh", mesh.faces, "\n\n")
@@ -42,6 +36,13 @@ n = np.array([0,0,-1])
 print(intersect_ray(c,n,mesh.vertices[mesh.faces[0]]))
 # mesh = mesh.subdivide()
 # print(mesh.vertices[mesh.faces[0:2]])
+# mesh.show()
+# m2 = trimesh.load('stl_files/strip.stl')
+# m2.apply_translation([-150,0,-20])
+# m3 = mesh.__add__(m2)
+
 mesh.show()
 
-mesh.export('stl_files/panel.stl')
+# mesh.export('stl_files/panel.stl')
+
+

@@ -5,6 +5,7 @@ import FPM.ImportFPM_stack as fpm
 from TowMentat import *
 from Vector import Vector
 from Point import Point
+from Mesh import tow_mesh
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -23,17 +24,20 @@ def main(tows):
         # for now do z offset before ortho offset
         t.z_offset()
         t.ortho_offset(t.w)
+        # t_mesh = tow_mesh(t)
+        # t_mesh.show()
+        # t_mesh.export('stl_files/strip.stl')
         
         # Interpolate for additional points in tow paths
+        """ 
         d =  t.length()/len(t.points)
-        
-        """ if t.length()/len(t.points) > 0.5*t.w:
+        if t.length()/len(t.points) > 0.5*t.w:
             n = int(t.length()/0.5*t.w)
             print("n = ", n)
             # interpolate_tow_points(t.points)
             t.L = interpolate_tow_points(t.L, n)
-            t.R = interpolate_tow_points(t.R, n)
-         """
+            t.R = interpolate_tow_points(t.R, n) """
+        
 
         # plot_points(t.points, ax)
         plot_surface(t.L,t.R, ax)
@@ -45,6 +49,8 @@ def main(tows):
     plt.show()
         
     m_tows = create_mentat_tows(tows)
+    
+    # print(m_tows[12][0].pts_L[2]._vec)
     return m_tows
 
 
@@ -101,6 +107,14 @@ def print_tow_batch(tow):
         print(f"tow {t._id}", f"length = {len(t.pts)}")
 
 
+def interpolate_tow_points(coords,n):
+    axes = np.array(coords)
+    xs = axes[:,0]
+    ys = axes[:,1]
+    zs = axes[:,2]
+
+    
+
 # Interpolate for additional points between each curve
 def interpolate_tow_points(coords, n):
     
@@ -109,10 +123,11 @@ def interpolate_tow_points(coords, n):
     ys = axes[:,1]
     zs = axes[:,2]
 
-    tck, u = ip.splprep([xs,ys,zs])
-    u1 = np.linspace(0,1,n)
-    xx, yy, zz = ip.splev(u1, tck)
-    
+    # tck, u = ip.splprep([xs,ys,zs])
+    # u1 = np.linspace(0,1,n)
+    # xx, yy, zz = ip.splev(u1, tck)
+
+
     """ INTERP BETWEEN POINTS TO KEEP CURRENT POINTS """
 
     ins = np.array([xx,yy,zz]).T
@@ -142,7 +157,6 @@ def plot_spline(tck):
     plt.colorbar()
     plt.show()
 
-
 def plot_points(points, ax):
     #transform all coordinates
     coords = []
@@ -156,7 +170,6 @@ def plot_points(points, ax):
 
     ax.plot(xx, yy, zz) 
     # ax.scatter(xx, yy, zz) 
-
 
 def plot_surface(L, R, ax):
     lx = np.array(L)
