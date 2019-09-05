@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+# MARC Files
+*.proc
+*.mud
+
+
 # Distribution / packaging
 .Python
 build/
