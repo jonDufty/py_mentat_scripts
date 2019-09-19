@@ -14,16 +14,40 @@ def main():
 	
 	assign_geometry(tows[0][0].t)
 
-	create_contact_bodies()
+	cbody_index = create_contact_bodies(ply_index)
 
 	assign_orientation()
 
 	standard_material(T300, "all_existing")
 	
-	# edge_contact()
+	'''
+	Note: This is only working for ply-wise models at the moment
+	not generalised yet
+	'''
+	cb_index = cbody_index(ply_index)
+	print(cb_index)
+
+	edge_contact(cb_index, 0.5)
+	
 
 	# face_contact()
 
+
+
+def edge_contact(cb_index, tolerance):
+
+	p("*new_contact_table")
+	p("*contact_table_name ct_edege")
+	p("*prog_option ctable:criterion:contact_distance")
+	p("*prog_param ctable:contact_distance %f" % tolerance)
+	p("*prog_option ctable:add_replace_mode:both")
+	p("*prog_option ctable:contact_type:glue")
+	p("@set($cta_crit_dist_action,list)")
+	
+	for c in cb_index.keys():
+		cb = " ".join(cb_index[c])
+		p("*ctable_add_replace_entries_body_list")
+		p("%s %s" % (cb, "#"))
 
 
 def assign_geometry(t):
@@ -56,19 +80,25 @@ def standard_material(m, elements):
     p(elements)
     return
 
-def create_contact_bodies():
+def create_contact_bodies(ply_index):
 	nsets = py_get_int("nsets()")
 	for i in range(1, nsets+1):
 		# iterate through tow sets
 		si = py_get_int("set_id(%d)" % i)
 		sn = py_get_string("set_name(%d)" % si)
-
 		# Create contact body for tow
 		p("*new_cbody mesh *contact_option state:solid *contact_option skip_structural:off")
 		p("*contact_body_name %s" % ("cb"+str(i)))
 		p("*add_contact_body_elements")
 		p(sn)
 	return py_get_int("ncbodys()")
+
+def cbody_index(ply_index):
+	
+	for k in ply_index.keys():
+		for s in ply_index[k]:
+			s = s.replace("tow","cb")
+	return ply_index
 
 
 def assign_orientation():
