@@ -45,7 +45,7 @@ def get_tows(geom):
         dir = "/".join([ply_dir,d])
         # Iterate through every tow pt file in directory and create new tow
         for f in os.listdir(dir):
-            tows.append(Tow(tow_width,tow_t, num_el, z_off=z))
+            tows.append(Tow(tow_width,tow_t, num_el, z_off=z, ply=d))
             file = "".join([dir,"/",f])
             skip = start_line(file)
             if skip < 0:

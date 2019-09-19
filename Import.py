@@ -53,6 +53,14 @@ def main(tows):
     # print(m_tows[12][0].pts_L[2]._vec)
     return m_tows
 
+def create_ply_index(m_tows):
+    ply = {}
+    for t in m_tows:
+        if t[0].ply in ply.keys():
+            ply[t[0].ply].append(t[0].name())
+        else:
+            ply[t[0].ply] = [t[0].name()]
+    return ply
 
 
 # Create Marc/py_mentat compatible class
@@ -71,7 +79,7 @@ def create_mentat_tows(tows):
             m_points_L.append(Point_Mentat(t.L[i].tolist()))
             m_points_R.append(Point_Mentat(t.R[i].tolist()))
 
-        new_tow = Tow_Mentat(tow_idx, m_points, m_points_L, m_points_R, t.t, t.w)
+        new_tow = Tow_Mentat(tow_idx, m_points, m_points_L, m_points_R, t.t, t.w, ply=t.ply)
         new_tow = batch_tows(new_tow, length)
         m_tows.append(new_tow)
         tow_idx += 1
@@ -139,12 +147,12 @@ def interpolate_tow_points(coords, n):
 
 
 # Dump new tow data
-def save_tows(tows, name):
+def save_tows(obj, name):
     file_end = name + ".dat"
     file_name = '/'.join(['dat_files','batched',file_end])
     print(f"...saving at {file_name}")
     with open(file_name, 'wb') as f:
-        pickle.dump(tows, f)
+        pickle.dump(obj, f)
     print("save successful")
 
 
@@ -204,7 +212,11 @@ if __name__ == '__main__':
     tows = fpm.get_tows(geom)
 
     mtows = main(tows)
-    save_tows(mtows, sys.argv[1])
+    ply_index = create_ply_index(mtows)
+    for k in ply_index.keys():
+        print(k, "\t", ply_index[k])
+
+    save_tows((mtows,ply_index), sys.argv[1])
 
 
 

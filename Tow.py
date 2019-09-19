@@ -7,7 +7,7 @@ class Tow():
     t_id = 0
     e_id = 1
 
-    def __init__(self, tow_w, tow_t, num_el=10, el_size=1, z_off=0):
+    def __init__(self, tow_w, tow_t, num_el=10, el_size=1, z_off=0, ply=None):
         self._id = self._gen_id()
         self.points = []
         self.w = tow_w
@@ -18,6 +18,7 @@ class Tow():
         self.el_size = el_size          #Remove later most likely
         self._eid = self._gen_index()   #Keep for now, will probably remove later
         self.z = z_off
+        self.ply = ply
 
     def _gen_id(self):
         Tow.t_id += 1

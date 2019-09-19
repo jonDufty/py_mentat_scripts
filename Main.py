@@ -1,31 +1,90 @@
 from py_mentat import *
 from TowMentat import *
+from Material import *
 import pickle
 import os
 
 
 def main():
 
-	tows = load_tows()
+	tows,ply_index = load_tows()
 	
-	i = 1
-	for t in tows[0:1]:
+	for t in tows:
 		create_tow_shell(t)
-		i += 1
 	
-	#create_tow_shell(tows[0])
-	print("Created Tow Shells")
+	assign_geometry(tows[0][0].t)
 
+	create_contact_bodies()
+
+	assign_orientation()
+
+	standard_material(T300, "all_existing")
+	
+	# edge_contact()
+
+	# face_contact()
+
+
+
+def assign_geometry(t):
+
+	# Specify geometry for elements
+	p("*new_geometry")
+	p("*geometry_type mech_three_shell")
+	p("*geometry_param thick %f" %t)
+	p("*add_geometry_elements")
+	p("all_existing")
+
+
+def standard_material(m, elements):
+    p("*new_mater standard")
+    p("*mater_option general:state:solid")
+    p("*mater_option general:skip_structural:off")
+    p('*mater_name ' + m.name)
+    p("*mater_option structural:type:elast_plast_ortho")
+    p("*mater_param structural:youngs_modulus1 %f" % m.E1)
+    p("*mater_param structural:youngs_modulus2 %f" % m.E2)
+    p("*mater_param structural:youngs_modulus3 %f" % m.E3)
+    p("*mater_param structural:poissons_ratio12 %f" % m.Nu12)
+    p("*mater_param structural:poissons_ratio23 %f" % m.Nu23)
+    p("*mater_param structural:poissons_ratio31 %f" % m.Nu31)
+    p("*mater_param structural:shear_modulus12 %f" % m.G12)
+    p("*mater_param structural:shear_modulus23 %f" % m.G23)
+    p("*mater_param structural:shear_modulus31 %f" % m.G31)
+
+    p("*add_mater_elements")
+    p(elements)
+    return
+
+def create_contact_bodies():
+	nsets = py_get_int("nsets()")
+	for i in range(1, nsets+1):
+		# iterate through tow sets
+		si = py_get_int("set_id(%d)" % i)
+		sn = py_get_string("set_name(%d)" % si)
+
+		# Create contact body for tow
+		p("*new_cbody mesh *contact_option state:solid *contact_option skip_structural:off")
+		p("*contact_body_name %s" % ("cb"+str(i)))
+		p("*add_contact_body_elements")
+		p(sn)
+	return py_get_int("ncbodys()")
+
+
+def assign_orientation():
+	p("*new_orient *orent_type edge23")
+	p("*add_orient_elements")
+	p("all_existing")
 
 
 def load_tows():
 	cwd = os.getcwd()
-	f = "batched\\cylinder_all.dat"
+	f = "batched\\panel_double.dat"
 	file_name = "\\".join([cwd,'dat_files',f])
 	# file_name = "/".join([cwd,'tows.dat']) #for linux FS
 	with open(file_name,'rb') as f:
-		tows = pickle.load(f)
-	return tows
+		tows,ply = pickle.load(f)
+	return tows,ply
 
 
 def generate_points(point):
@@ -86,7 +145,8 @@ def create_tow_shell(tow_list):
 		# p(str(n_surf))
 		# p("#")
 
-	
+	n_prev = py_get_int("nelements()")
+
 	p("@set($convert_entities,surfaces)")
 	p("@set($convert_surfaces_method,surface_faceted)")
 	p("*set_curve_div_type_fix")
@@ -96,22 +156,22 @@ def create_tow_shell(tow_list):
 	p("all_existing")
 	p("*surface_faceted")
 	p("all_existing") 
-	p("#")
-	return
 
-	p("*renumber_surfaces")
+	# p("*renumber_surfaces")
 	p("@set($automesh_surface_desc,facets)")
 	p("@set($automesh_surface_family,mixed)")
 	p("*pt_set_element_size %s" % str(el_size))
 	p("*pt_quadmesh_surf")
 	p("all_existing")
 
-    
 	# Create set for tow
-	p("*select_method_flood")
+	n_curr = py_get_int("nelements()")
+	elements = [str(i) for i in list(range(n_prev+1,n_curr+1))]
+	elements = " ".join(elements)
+	p("*select_method_single")
 	p("*select_elements")
-	print("n_elem = ", py_get_int("nelements()"))
-	p(str(py_get_int("nelements()")))
+	p("%s %s" % (elements, "#"))
+	
 	p("*store_elements")
 	p(tow.name())
 	p("*all_selected")
@@ -119,13 +179,6 @@ def create_tow_shell(tow_list):
 	p("*clear_geometry")
 	p("select_clear")
 	
-	# Specify geometry for elements
-	p("*new_geometry")
-	p("*geometry_type mech_three_shell")
-	p("*geometry_param thick %f" %tow.t)
-	p("*add_geometry_elements")
-	p(tow.name())
-
 
 def p(s):
     #print(s)
