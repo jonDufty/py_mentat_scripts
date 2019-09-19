@@ -8,36 +8,37 @@ import os
 def main():
 
 	tows,ply_index = load_tows()
-	
 	for t in tows:
 		create_tow_shell(t)
 	
 	assign_geometry(tows[0][0].t)
 
-	cbody_index = create_contact_bodies(ply_index)
+	create_contact_bodies(ply_index)
 
 	assign_orientation()
 
 	standard_material(T300, "all_existing")
-	
+
 	'''
 	Note: This is only working for ply-wise models at the moment
 	not generalised yet
 	'''
+
 	cb_index = cbody_index(ply_index)
 	print(cb_index)
 
 	edge_contact(cb_index, 0.5)
 	
 
-	# face_contact()
+	face_contact(0.1)
+	# Why does face-face work with smaller tolerance
 
 
 
 def edge_contact(cb_index, tolerance):
 
 	p("*new_contact_table")
-	p("*contact_table_name ct_edege")
+	p("*contact_table_name ct_edge")
 	p("*prog_option ctable:criterion:contact_distance")
 	p("*prog_param ctable:contact_distance %f" % tolerance)
 	p("*prog_option ctable:add_replace_mode:both")
@@ -48,6 +49,18 @@ def edge_contact(cb_index, tolerance):
 		cb = " ".join(cb_index[c])
 		p("*ctable_add_replace_entries_body_list")
 		p("%s %s" % (cb, "#"))
+	return
+
+
+def face_contact(tolerance):
+	p("*new_contact_table")
+	p("*contact_table_name ct_face")
+	p("*prog_option ctable:criterion:contact_distance")
+	p("*prog_param ctable:contact_distance %f" % tolerance)
+	p("*prog_option ctable:add_replace_mode:both")
+	p("*prog_option ctable:contact_type:glue")
+	p("@set($cta_crit_dist_action,all_pairs)")
+	p("*ctable_add_replace_entries_all")
 
 
 def assign_geometry(t):
@@ -80,6 +93,7 @@ def standard_material(m, elements):
     p(elements)
     return
 
+
 def create_contact_bodies(ply_index):
 	nsets = py_get_int("nsets()")
 	for i in range(1, nsets+1):
@@ -93,12 +107,14 @@ def create_contact_bodies(ply_index):
 		p(sn)
 	return py_get_int("ncbodys()")
 
-def cbody_index(ply_index):
-	
+
+def cbody_index(ply_index):	
+	cb_index = {}
 	for k in ply_index.keys():
+		cb_index[k] = []
 		for s in ply_index[k]:
-			s = s.replace("tow","cb")
-	return ply_index
+			cb_index[k].append(s.replace("tow","cb"))
+	return cb_index
 
 
 def assign_orientation():
