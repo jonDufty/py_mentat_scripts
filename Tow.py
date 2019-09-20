@@ -45,9 +45,14 @@ class Tow():
             self.L.append(p.ortho_offset(w))
             self.R.append(p.ortho_offset(-w))
 
-    def z_offset(self):
-        for p in self.points:
-            p.z_offset(self.t*self.z)
+    def z_offset(self, arr=None):
+        if arr:
+            for i in range(len(arr)):
+                print(self.points[i].coord.vec)
+                self.points[i].z_offset(arr[i]*self.t)
+        else:
+            for p in self.points:
+                p.z_offset(self.t*self.z)
             
     # Calculate total length of the tow
     def length(self):

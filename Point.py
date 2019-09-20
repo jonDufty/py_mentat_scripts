@@ -33,6 +33,7 @@ class Point:
 
     # Moves (no copy) along the z-offset direction
     def z_offset(self, offset):
+        print("offset z= ",offset)
         normal_vec = self.normal.vec*offset
         self.coord = self.move_translate(normal_vec)
 ''' 

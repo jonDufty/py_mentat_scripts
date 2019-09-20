@@ -5,7 +5,9 @@ import FPM.ImportFPM_stack as fpm
 from TowMentat import *
 from Vector import Vector
 from Point import Point
-from Mesh import tow_mesh
+from Mesh import *
+import trimesh
+import pyglet
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -14,32 +16,39 @@ import scipy as sp
 from scipy import interpolate as ip
 
 
-def main(tows):
+def main(tows, geom):
     
     fig = plt.figure()
     ax = fig.add_subplot(111,projection='3d')
 
+    # Initialise base mesh for offset
+    base_stl = trimesh.load("/".join(["stl_files",geom + ".stl"]))
+    base_mesh = Mesh(base_stl)
+
     # Iterate through each tow
     for t in tows:
         # for now do z offset before ortho offset
-        t.z_offset()
         t.ortho_offset(t.w)
-        # t_mesh = tow_mesh(t)
-        # t_mesh.show()
-        # t_mesh.export('stl_files/strip.stl')
+        t_mesh = tow_mesh(t)
+        print(base_mesh.z_off)
+
+        res = project_down(base_mesh, t)
+        print("res = ", res, "z offset successful")
+
+        project_up(base_mesh, t_mesh)
+        base_mesh.mesh.show()
+
+        # print(base_mesh.z_off.sum())
+        # print(max(base_mesh.z_off))
+        # print(t_mesh.vertices)
         
-        # Interpolate for additional points in tow paths
-        """ 
-        d =  t.length()/len(t.points)
-        if t.length()/len(t.points) > 0.5*t.w:
-            n = int(t.length()/0.5*t.w)
-            print("n = ", n)
-            # interpolate_tow_points(t.points)
-            t.L = interpolate_tow_points(t.L, n)
-            t.R = interpolate_tow_points(t.R, n) """
+        '''
+        Insert interpolating feature once fixed
+        '''
         
 
-        # plot_points(t.points, ax)
+
+        plot_points(t.points, ax)
         plot_surface(t.L,t.R, ax)
         # plot_offset(t.L,t.R, ax)
 

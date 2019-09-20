@@ -40,6 +40,7 @@ print(intersect_ray(c,n,mesh.vertices[mesh.faces[0]]))
 # m2 = trimesh.load('stl_files/strip.stl')
 # m2.apply_translation([-150,0,-20])
 # m3 = mesh.__add__(m2)
+mesh.f
 
 mesh.show()
 
