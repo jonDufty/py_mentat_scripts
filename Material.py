@@ -16,7 +16,6 @@ class Orthotropic(Material):
 		self.G31 = G31
 
 
-
 # Initialise Materials
 name = "T300"
 E1 = 135e03

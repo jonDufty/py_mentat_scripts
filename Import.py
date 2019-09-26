@@ -1,6 +1,6 @@
 import pickle
 import sys
-import FPM.ImportFPM_stack as fpm
+import FPM.ImportFPM as fpm
 # import FPM.ImportFPM as fpm
 from TowMentat import *
 from Vector import Vector
@@ -14,53 +14,51 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import scipy as sp
 from scipy import interpolate as ip
+from geomdl import fitting as fit
+from geomdl.visualization import VisMPL as vis
 
-
-def main(tows, geom):
+def main(plys, geom):
     
+    # Initialise plot axis
     fig = plt.figure()
     ax = fig.add_subplot(111,projection='3d')
 
     # Initialise base mesh for offset
-    base_stl = trimesh.load("/".join(["stl_files",geom + ".stl"]))
-    base_mesh = Mesh(base_stl)
+    # base_stl = trimesh.load("/".join(["stl_files","panel" + ".stl"]))
+    # base_mesh = Mesh(base_stl)
+    # base_mesh.mesh.show()
 
-    # Iterate through each tow
-    for t in tows:
-        # for now do z offset before ortho offset
-        t.ortho_offset(t.w)
-        t_mesh = tow_mesh(t)
-        print(base_mesh.z_off)
+    for p in plys:
+        # Iterate through each tow
+        for t in p.tows:
+            # for now do z offset before ortho offset
+            t.z_offset()
+            # project_down(base_mesh, t)
+            t.ortho_offset(t.w)
+            # t_mesh = tow_mesh(t)
+            # print(base_mesh.z_off)
 
-        res = project_down(base_mesh, t)
-        print("res = ", res, "z offset successful")
+            # project_up(base_mesh, t_mesh)
+            # base_mesh.mesh.show()
+            '''
+            Insert interpolating feature once fixed
+            '''
+            avg_dist = t.length()/len(t.points)
+            print(f"avg = {avg_dist} ... ")
+            if avg_dist > t.w/4:
+                evalpts = interpolate_tow_points(t.L)
+            # plot_points(t.points, ax)
+            plot_surface(t.L,t.R, ax)
+            # plot_offset(t.L,t.R, ax)
 
-        project_up(base_mesh, t_mesh)
-        base_mesh.mesh.show()
-
-        # print(base_mesh.z_off.sum())
-        # print(max(base_mesh.z_off))
-        # print(t_mesh.vertices)
-        
-        '''
-        Insert interpolating feature once fixed
-        '''
-        
-
-
-        plot_points(t.points, ax)
-        plot_surface(t.L,t.R, ax)
-        # plot_offset(t.L,t.R, ax)
-
-        '''Apply Z offset'''
+            '''Apply Z offset'''
 
     plt.figure(fig.number)
     plt.show()
         
-    m_tows = create_mentat_tows(tows)
+    m_plys = create_mentat_tows(plys)
     
-    # print(m_tows[12][0].pts_L[2]._vec)
-    return m_tows
+    return m_plys
 
 def create_ply_index(m_tows):
     ply = {}
@@ -73,27 +71,30 @@ def create_ply_index(m_tows):
 
 
 # Create Marc/py_mentat compatible class
-def create_mentat_tows(tows):
-    m_tows = []
+def create_mentat_tows(plys):
+    m_plys = []
     tow_idx = 1
-    length = 75
+    length = 100
 
-    for t in tows:
-        m_points = []
-        m_points_R = []
-        m_points_L = []
+    for p in plys:
+        m_tows = []
+        for t in p.tows:
+            m_points = []
+            m_points_R = []
+            m_points_L = []
+            for i in range(len(t.points)):
+                m_points.append(Point_Mentat(t.points[i].coord.tolist()))
+                m_points_L.append(Point_Mentat(t.L[i].tolist()))
+                m_points_R.append(Point_Mentat(t.R[i].tolist()))
 
-        for i in range(len(t.points)):
-            m_points.append(Point_Mentat(t.points[i].coord.vec.tolist()))
-            m_points_L.append(Point_Mentat(t.L[i].tolist()))
-            m_points_R.append(Point_Mentat(t.R[i].tolist()))
+            new_tow = Tow_Mentat(t._id, m_points, m_points_L, m_points_R, t.t, t.w, ply=t.ply)
+            new_tow = batch_tows(new_tow, length)
+            m_tows.append(new_tow)
 
-        new_tow = Tow_Mentat(tow_idx, m_points, m_points_L, m_points_R, t.t, t.w, ply=t.ply)
-        new_tow = batch_tows(new_tow, length)
-        m_tows.append(new_tow)
-        tow_idx += 1
+        new_ply = Ply_Mentat(p._id, m_tows)
+        m_plys.append(new_ply)
 
-    return m_tows   
+    return m_plys   
 
 def batch_tows(tow, length):
     if len(tow.pts) < length:
@@ -124,35 +125,22 @@ def print_tow_batch(tow):
         print(f"tow {t._id}", f"length = {len(t.pts)}")
 
 
-def interpolate_tow_points(coords,n):
-    axes = np.array(coords)
-    xs = axes[:,0]
-    ys = axes[:,1]
-    zs = axes[:,2]
-
-    
-
 # Interpolate for additional points between each curve
-def interpolate_tow_points(coords, n):
-    
-    axes = np.array(coords)
-    xs = axes[:,0]
-    ys = axes[:,1]
-    zs = axes[:,2]
+def interpolate_tow_points(coords):
+    print("len orig = ", len(coords))
+    points = []
+    curve = fit.interpolate_curve(coords, 1)
+    curve.delta = 0.005
+    print("len eval = ", len(curve.evalpts))
 
-    # tck, u = ip.splprep([xs,ys,zs])
-    # u1 = np.linspace(0,1,n)
-    # xx, yy, zz = ip.splev(u1, tck)
+    evalpts = np.array(curve.evalpts)
+    
+    return evalpts
 
 
     """ INTERP BETWEEN POINTS TO KEEP CURRENT POINTS """
 
-    ins = np.array([xx,yy,zz]).T
-    new = []
-    for row in ins:
-        new.append(row)
-
-    return new        
+    pass      
 
 
 # Dump new tow data
@@ -215,17 +203,12 @@ def plot_offset(L, R, ax):
 if __name__ == '__main__':
     if len(sys.argv) is 1:
         exit("Specify file name to import")
-    # from Majestic.ImportMaj import tows
-    # from FPM.ImportFPM import tows
+
     geom = sys.argv[1]
-    tows = fpm.get_tows(geom)
+    plys = fpm.get_tows(geom)
+    marc_ply = main(plys, geom)
 
-    mtows = main(tows)
-    ply_index = create_ply_index(mtows)
-    for k in ply_index.keys():
-        print(k, "\t", ply_index[k])
-
-    save_tows((mtows,ply_index), sys.argv[1])
+    save_tows(marc_ply, sys.argv[1])
 
 
 

@@ -10,7 +10,7 @@ class Mesh():
         self._z_off = self.__init_z()
 
     def __init_z(self):
-        return np.empty(len(self.mesh.faces))
+        return [0]*len(self.mesh.faces)
 
     @property
     def z_off(self):
@@ -32,29 +32,52 @@ def tow_mesh(tow):
         mesh = mesh.__add__(mesh_segment)
     return mesh
 
+
 """ 
 Projects down from tow points using vectors from FPM data
 onto base mesh using similar method to project up
 """
 def project_down(base_mesh, tow):
     mesh_faces = base_mesh.mesh.faces
-    z_arr = []
+    print(f"*****\ntow: {tow._id}\n******\n")
+
     for p in tow.points:
-        coord = p.coord.vec
-        normal = p.normal.vec
+        coord = p.coord
+        normal = p.normal
         z = 0
         for f in range(len(mesh_faces)):
             face = mesh_faces[f]
             vertices = base_mesh.mesh.vertices[face]
             res = intersect_ray(coord,normal,vertices)
             if res:
-                # print("hit face = ", f, "z = ", base_mesh.z_off[f])
+                print(f"coord = {coord}")
+                print("hit face = ", f, "z = ", base_mesh.z_off[f])
                 z = (base_mesh.z_off[f])
-        p.z_offset(z*tow.t)
+                p.z_offset(z*tow.t)
+                break
 
     return True
 
     
+""" 
+Checks the face normals projected up towards the tows
+"""
+def project_up(base_mesh, tow_mesh):
+
+    mesh = base_mesh.mesh
+    base_vectors = mesh.face_normals
+    tow_faces = tow_mesh.faces
+
+    # Iterate through every face normal and check for intersection with tow (check each face)
+    for i in range(len(base_vectors)):
+        vec = base_vectors[i]
+        for face in tow_faces:
+            vertices = tow_mesh.vertices[face]
+            coord = face_centroid(mesh, i)
+            res = intersect_ray(coord, vec, vertices)
+            if res:
+                base_mesh.inc_z_off(i)
+                break
 
 def adjacent(mesh,face):
     faces = []
@@ -80,78 +103,44 @@ def intersect_ray(coord, ray, vertices):
             Vertices - 1x3 array of 3 vertices of triangle
     """
     # Find vectors 
-    # print(f"v0 = {vertices[0]}\n v1 = {vertices[1]}\n v2 = {vertices[2]}\n")
     e1 = vertices[1] - vertices[0]
     e2 = vertices[2] - vertices[0]
     t_vec = coord - vertices[0]
 
     eps = 0.00001
-    # print(f"e1 = {e1} e2 = {e2}")
 
     # Calculate P to determine if ray is parallel to face
     p = np.cross(ray, e2)
     det = np.dot(e1, p)
     inv_det = 1.0/det
 
-    # print("det = ",det, "p  = ", p)
-
     # If parallel then return early
     if abs(det) < eps:
-        # print("Ray parallel to plane")
         return False
 
     u = np.dot(t_vec,p)
     u *= inv_det
 
-    # print("u = ", u)
-
     # Check bounds of u
     if u < 0. or u > 1.:
-        # print("u out of bounds")
         return False
 
     Q = np.cross(t_vec,e1)
     v = np.dot(ray,Q)
     v *= inv_det
-    # print(f"t = {t_vec} ray = {ray}, q = {Q}")
-    # print("v = ", v)
 
     # Check bounds of v
     if v < 0.:
-        # print("v out of bounds")
         return False
     elif u + v > 1.:
-        # print("u + v > det")
         return False
 
     # Calculate t and scale
     t = np.dot(e2, Q)
     t *= inv_det
 
-    # print(f"t = {t} u = {u} v = {v}")
-
     return True
 
-""" 
-Checks the face normals projected up towards the tows
-"""
-def project_up(base_mesh, tow_mesh):
-
-    mesh = base_mesh.mesh
-    base_vectors = mesh.face_normals
-    tow_faces = tow_mesh.faces
-    
-    # Iterate through every face normal and check for intersection with tow (check each face)
-    for i in range(len(base_vectors)):
-        vec = base_vectors[i]
-        for face in tow_faces:
-            vertices = tow_mesh.vertices[face]
-            coord = face_centroid(mesh, i)
-            res = intersect_ray(coord, vec, vertices)
-            if res:
-                base_mesh.inc_z_off(i)
-                break
-    colour_faces(base_mesh)
 
 def colour_faces(mesh):
     bmesh = mesh.mesh
@@ -166,6 +155,16 @@ def face_centroid(mesh, i):
     y = vertices[:,1].mean()
     z = vertices[:,2].mean()
     return np.array([x,y,z])
+
+def base_mesh_scatter(mesh):
+    bmesh = mesh.mesh
+    centroids_off = []
+    for i in range(len(bmesh.faces)):
+        c = face_centroid(bmesh,i)
+        c[2] = mesh.z_off[i]
+        centroids_off.append(c)
+    return np.array(centroids_off)
+
 
 
     

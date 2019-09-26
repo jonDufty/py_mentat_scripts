@@ -18,7 +18,7 @@ with open("tows.dat", 'rb') as fp:
 mesh = trimesh.Trimesh(vertices=[[500,-100,25.4],[900,-100,25.4],[900,100,25.4],[500,100,25.3]],
                         faces = [[0,1,2,3]])
 
-mesh = subdivide_it(mesh,20)
+mesh = subdivide_it(mesh,5)
 
 # print("mesh", mesh.faces, "\n\n")
 # print("mesh", mesh.faces, "\n\n")
@@ -40,10 +40,9 @@ print(intersect_ray(c,n,mesh.vertices[mesh.faces[0]]))
 # m2 = trimesh.load('stl_files/strip.stl')
 # m2.apply_translation([-150,0,-20])
 # m3 = mesh.__add__(m2)
-mesh.f
 
 mesh.show()
 
-# mesh.export('stl_files/panel.stl')
+mesh.export('stl_files/panel.stl')
 
 

@@ -1,4 +1,15 @@
 # Isolated tow class to accomodate py_mentat modules
+class Ply_Mentat():
+    def __init__(self, id, tows):
+        self.id = id
+        self.tows = tows
+
+    def list_tows(self):
+        tow_sets = []
+        for t in self.tows:
+            tow_sets.append(t[0].name())
+        return tow_sets
+        
 
 class Tow_Mentat(object):
     def __init__(self,id, coords, off_L, off_R, t, w, ply=None):

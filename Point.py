@@ -17,24 +17,24 @@ class Point:
 
     #Copies a point by translating by a given coordinate
     def copy_translate(self, v):
-        c = self.coord.vec + v
+        c = self.coord + v
         return c
     
     #Moves (no copy) a point by translating by a given coordinate
     def move_translate(self, v):
-        new_v = self.coord.vec + v
-        return Vector(new_v[0], new_v[1], new_v[2])
+        new_v = self.coord + v
+        return new_v
 
     # Creates new point for L/R offset
     def ortho_offset(self, offset):
-        ortho = self.normal.cross(self.dir)
+        ortho = np.cross(self.normal,self.dir)
         ortho *= offset
         return self.copy_translate(ortho)
 
     # Moves (no copy) along the z-offset direction
     def z_offset(self, offset):
-        print("offset z= ",offset)
-        normal_vec = self.normal.vec*offset
+        # print("offset z= ",offset, "current z =", self.coord.vec[2])
+        normal_vec = self.normal*offset
         self.coord = self.move_translate(normal_vec)
 ''' 
     def send_coord(self):
