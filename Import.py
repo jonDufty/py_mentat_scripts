@@ -24,35 +24,40 @@ def main(plys, geom):
     ax = fig.add_subplot(111,projection='3d')
 
     # Initialise base mesh for offset
-    # base_stl = trimesh.load("/".join(["stl_files","panel" + ".stl"]))
-    # base_mesh = Mesh(base_stl)
+    base_stl = trimesh.load("/".join(["stl_files","panel" + ".stl"]))
+    base_mesh = Mesh(base_stl)
     # base_mesh.mesh.show()
-
     for p in plys:
+        top_mesh = Trimesh()
+        
         # Iterate through each tow
         for t in p.tows:
             # for now do z offset before ortho offset
-            t.z_offset()
-            # project_down(base_mesh, t)
+            # t.z_offset()
+            project_down(base_mesh, t)
             t.ortho_offset(t.w)
-            # t_mesh = tow_mesh(t)
+            t_mesh = tow_mesh(t)
+            top_mesh = top_mesh.__add__(t_mesh)
             # print(base_mesh.z_off)
 
-            # project_up(base_mesh, t_mesh)
             # base_mesh.mesh.show()
             '''
             Insert interpolating feature once fixed
             '''
+            '''
             avg_dist = t.length()/len(t.points)
-            print(f"avg = {avg_dist} ... ")
+            # print(f"avg = {avg_dist} ... ")
             if avg_dist > t.w/4:
                 evalpts = interpolate_tow_points(t.L)
+            '''
             # plot_points(t.points, ax)
             plot_surface(t.L,t.R, ax)
             # plot_offset(t.L,t.R, ax)
 
             '''Apply Z offset'''
-
+        top_mesh.show()
+        project_up(base_mesh, top_mesh)
+    
     plt.figure(fig.number)
     plt.show()
         

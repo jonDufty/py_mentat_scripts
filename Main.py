@@ -7,38 +7,40 @@ import os
 
 def main():
 
-	tows,ply_index = load_tows()
-	for t in tows:
-		create_tow_shell(t)
+	plys = load_tows("panel_double.dat")
+	# General variables
+	thick = plys[0].tows[0][0].t
+	width = plys[0].tows[0][0].w
+	'''
+	'''
+	for p in plys:
+		for t in p.tows:
+			create_tow_shell(t)
 	
-	assign_geometry(tows[0][0].t)
-
-	create_contact_bodies(ply_index)
-
-	assign_orientation()
+	assign_geometry(thick)
 
 	standard_material(T300, "all_existing")
+
+	assign_orientation()
 
 	'''
 	Note: This is only working for ply-wise models at the moment
 	not generalised yet
 	'''
 
-	cb_index = cbody_index(ply_index)
+	cb_index = cbody_index(plys)
+	create_contact_bodies(plys)
 	print(cb_index)
 
-	edge_contact(cb_index, 0.5)
-	
+	ctable = edge_contact(cb_index, 0.5)
 
-	face_contact(0.1)
-	# Why does face-face work with smaller tolerance
-
+	face_contact(0.01, ctable)
 
 
 def edge_contact(cb_index, tolerance):
-
+	ctable_name = "ct_edge_face"
 	p("*new_contact_table")
-	p("*contact_table_name ct_edge")
+	p("*contact_table_name %s" % ctable_name)
 	p("*prog_option ctable:criterion:contact_distance")
 	p("*prog_param ctable:contact_distance %f" % tolerance)
 	p("*prog_option ctable:add_replace_mode:both")
@@ -49,18 +51,19 @@ def edge_contact(cb_index, tolerance):
 		cb = " ".join(cb_index[c])
 		p("*ctable_add_replace_entries_body_list")
 		p("%s %s" % (cb, "#"))
-	return
+	p("*interact_option retain_gaps:on")
+	return ctable_name
 
 
-def face_contact(tolerance):
-	p("*new_contact_table")
-	p("*contact_table_name ct_face")
+def face_contact(tolerance, ctable):
+	p("*edit_contact_table %s" % ctable)
 	p("*prog_option ctable:criterion:contact_distance")
 	p("*prog_param ctable:contact_distance %f" % tolerance)
-	p("*prog_option ctable:add_replace_mode:both")
+	p("*prog_option ctable:add_replace_mode:add_only")
 	p("*prog_option ctable:contact_type:glue")
 	p("@set($cta_crit_dist_action,all_pairs)")
 	p("*ctable_add_replace_entries_all")
+	p("*interact_option retain_gaps:on")
 
 
 def assign_geometry(t):
@@ -94,26 +97,27 @@ def standard_material(m, elements):
     return
 
 
-def create_contact_bodies(ply_index):
+def create_contact_bodies(plys):
 	nsets = py_get_int("nsets()")
 	for i in range(1, nsets+1):
 		# iterate through tow sets
 		si = py_get_int("set_id(%d)" % i)
 		sn = py_get_string("set_name(%d)" % si)
+		cn = sn.replace("tow","cb")
 		# Create contact body for tow
 		p("*new_cbody mesh *contact_option state:solid *contact_option skip_structural:off")
-		p("*contact_body_name %s" % ("cb"+str(i)))
+		p("*contact_body_name %s" % cn)
 		p("*add_contact_body_elements")
 		p(sn)
 	return py_get_int("ncbodys()")
 
 
-def cbody_index(ply_index):	
+def cbody_index(plys):	
 	cb_index = {}
-	for k in ply_index.keys():
-		cb_index[k] = []
-		for s in ply_index[k]:
-			cb_index[k].append(s.replace("tow","cb"))
+	for p in plys:
+		cb_index[p.id] = []
+		for s in p.list_tows():
+			cb_index[p.id].append(s.replace("tow","cb"))
 	return cb_index
 
 
@@ -123,9 +127,9 @@ def assign_orientation():
 	p("all_existing")
 
 
-def load_tows():
+def load_tows(file):
 	cwd = os.getcwd()
-	f = "batched\\panel_double.dat"
+	f = "batched\\"+file
 	file_name = "\\".join([cwd,'dat_files',f])
 	# file_name = "/".join([cwd,'tows.dat']) #for linux FS
 	with open(file_name,'rb') as f:
