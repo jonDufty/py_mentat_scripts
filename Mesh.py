@@ -1,3 +1,4 @@
+import trimesh
 from trimesh import Trimesh, visual
 import numpy as np
 
@@ -20,16 +21,17 @@ class Mesh():
         self._z_off[index] += 1
 
 
-def tow_mesh(tow):
+def tow_mesh(t):
     vertices = []
     mesh = Trimesh()
-    for i in range(len(tow.points)-1):
-        v1 = tow.L[i]
-        v2 = tow.L[i+1]
-        v3 = tow.R[i+1]
-        v4 = tow.R[i]
+    for i in range(len(t.new_pts[0])-1):
+        v1 = t.new_pts[0][i]
+        v2 = t.new_pts[0][i+1]
+        v3 = t.new_pts[-1][i+1]
+        v4 = t.new_pts[-1][i]
         mesh_segment = Trimesh(vertices=[v1,v2,v3,v4], faces = [[0,1,2,3]])
         mesh = mesh.__add__(mesh_segment)
+    # mesh.invert()
     return mesh
 
 
@@ -37,48 +39,52 @@ def tow_mesh(tow):
 Projects down from tow points using vectors from FPM data
 onto base mesh using similar method to project up
 """
-def project_down(base_mesh, tow):
-    mesh_faces = base_mesh.mesh.faces
-    print(f"*****\ntow: {tow._id}\n******\n")
+def project_down(base_mesh, t):
+    normals = t.get_new_normals()
+    for i in range(len(t.new_pts)):
+        tow_origins = t.new_pts[i][:]
+        locations, vec_index, tri_index = base_mesh.mesh.ray.intersects_location(tow_origins, normals, multiple_hits=False)
+        for j in range(len(vec_index)):
+            t.new_pts[i][vec_index[j]] -= normals[i]*base_mesh.z_off[tri_index[j]]
+            pass
+        '''
+        Debugging visuals
+        print('The rays with index: {} hit the triangles stored at mesh.faces[{}]'.format(vec_index, tri_index))
+        print('The rays with index: {} hit the triangles stored at mesh.faces[{}]'.format(vec_index, tri_index))
+        # stack rays into line segments for visualization as Path3D
+        ray_visualize = trimesh.load_path(np.hstack((tow_origins +normals*-20.0, tow_origins + normals*20.0)).reshape(-1, 2, 3))
 
-    for p in tow.points:
-        coord = p.coord
-        normal = p.normal
-        z = 0
-        for f in range(len(mesh_faces)):
-            face = mesh_faces[f]
-            vertices = base_mesh.mesh.vertices[face]
-            res = intersect_ray(coord,normal,vertices)
-            if res:
-                print(f"coord = {coord}")
-                print("hit face = ", f, "z = ", base_mesh.z_off[f])
-                z = (base_mesh.z_off[f])
-                p.z_offset(z*tow.t)
-                break
-
+        scene = trimesh.Scene([base_mesh, ray_visualize])
+        scene.show()
+        '''
     return True
 
     
 """ 
 Checks the face normals projected up towards the tows
+Performs Breadth-first search based on adjacent faces
 """
 def project_up(base_mesh, tow_mesh):
 
     mesh = base_mesh.mesh
     base_vectors = mesh.face_normals
-    tow_faces = tow_mesh.faces
+    base_origins = mesh.triangles_center
 
-    # Iterate through every face normal and check for intersection with tow (check each face)
-    for i in range(len(base_vectors)):
-        vec = base_vectors[i]
-        for face in tow_faces:
-            vertices = tow_mesh.vertices[face]
-            coord = face_centroid(mesh, i)
-            res = intersect_ray(coord, vec, vertices)
-            if res:
-                base_mesh.inc_z_off(i)
-                break
+    locations, vec_index, tri_index = tow_mesh.ray.intersects_location(base_origins, base_vectors, multiple_hits=False)
 
+    '''
+    Debugging visuals
+    # stack rays into line segments for visualization as Path3D
+    ray_visualize = trimesh.load_path(np.hstack((base_origins, base_origins + base_vectors*20.0)).reshape(-1, 2, 3))
+
+    scene = trimesh.Scene([tow_mesh, ray_visualize])
+    scene.show()
+    '''
+    # base_mesh.z_off[vec_index] += 1
+
+    return vec_index
+            
+            
 def adjacent(mesh,face):
     faces = []
     for a in list(mesh.face_adjacency):
@@ -140,34 +146,33 @@ def intersect_ray(coord, ray, vertices):
     t *= inv_det
 
     return True
+'''     
+def spare_project():
+    mesh = base_mesh.mesh
+    base_vectors = mesh.face_normals
+    tow_faces = tow_mesh.faces
+    visited_faces = [False]*len(mesh.faces)
+    face_queue = [0] #start with first face
+    start_tow = 0
 
+    while(len(face_queue)>0):
+        face = face_queue.pop(0)
+        face_queue.append(adjacent(mesh, face))
+        vec = base_vectors[face]
+        tow_queue = [start_tow]
+        for tow in tow_faces:
+            vertices = tow_mesh.vertices[tow]
+            coord = face_centroid(mesh, face)
+            res = intersect_ray(coord, vec, vertices)
+            if res:
+                base_mesh.inc_z_off(face)
+                break
 
-def colour_faces(mesh):
-    bmesh = mesh.mesh
-    maps = np.array([[0,0,0,255],[255,0,0,255],[0,255,0,255],[0,0,255,255], [0,255,255,255], [255,255,255,255]])
-    for f in range(len(bmesh.faces)):
-        bmesh.visual.face_colors[f] = maps[int(mesh.z_off[f])]
-        
-
-def face_centroid(mesh, i):
-    vertices = mesh.vertices[mesh.faces[i]]
-    x = vertices[:,0].mean()
-    y = vertices[:,1].mean()
-    z = vertices[:,2].mean()
-    return np.array([x,y,z])
-
-def base_mesh_scatter(mesh):
-    bmesh = mesh.mesh
-    centroids_off = []
-    for i in range(len(bmesh.faces)):
-        c = face_centroid(bmesh,i)
-        c[2] = mesh.z_off[i]
-        centroids_off.append(c)
-    return np.array(centroids_off)
-
-
-
-    
-    
-
-
+    # Iterate through every face normal and check for intersection with tow (check each face)
+    for i in range(len(base_vectors)):
+        vec = base_vectors[i]
+        res = False
+        face = tow_faces[0]
+        while(res is False):
+            pass
+'''

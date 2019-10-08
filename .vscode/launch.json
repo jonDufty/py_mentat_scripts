@@ -12,6 +12,16 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python: Import.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/Import.py",
+            "console": "integratedTerminal",
+            "args": ["panel_double"],
+            "showReturnValue": true,
+            "stopOnEntry": false,
+        },
+        {
             "name": "Python: Current File (Integrated Terminal)",
             "type": "python",
             "request": "launch",

@@ -12,10 +12,12 @@ class Ply_Mentat():
         
 
 class Tow_Mentat(object):
-    def __init__(self,id, coords, off_L, off_R, t, w, ply=None):
+    def __init__(self,id, coords, off_L, off_R, off_Li, off_Ri, t, w, ply=None):
         self._id = id
         self.pts = coords
         self.pts_L = off_L
+        self.pts_Li = off_Li
+        self.pts_Ri = off_Ri
         self.pts_R = off_R
         self.t = t
         self.w = w

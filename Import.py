@@ -34,29 +34,40 @@ def main(plys, geom):
         for t in p.tows:
             # for now do z offset before ortho offset
             # t.z_offset()
-            project_down(base_mesh, t)
             t.ortho_offset(t.w)
-            t_mesh = tow_mesh(t)
-            top_mesh = top_mesh.__add__(t_mesh)
-            # print(base_mesh.z_off)
 
-            # base_mesh.mesh.show()
             '''
             Insert interpolating feature once fixed
             '''
-            '''
-            avg_dist = t.length()/len(t.points)
-            # print(f"avg = {avg_dist} ... ")
-            if avg_dist > t.w/4:
-                evalpts = interpolate_tow_points(t.L)
-            '''
+            for i in range(len(t.new_pts)):
+                t.new_pts[i] = interpolate_tow_points(t.new_pts[i], t.w/2)
+
+            # t.coords = interpolate_tow_points(t.coords, t.w/2)
+            # t.L_out = interpolate_tow_points(t.L_out, t.w/2)
+            # t.L_in = interpolate_tow_points(t.L_in, t.w/2)
+            # t.R_in = interpolate_tow_points(t.R_in, t.w/2)
+            # t.R_out = interpolate_tow_points(t.R_out, t.w/2)
+
+            t_mesh = tow_mesh(t)
+            top_mesh = top_mesh.__add__(t_mesh)
+            project_down(base_mesh, t)
+
             # plot_points(t.points, ax)
-            plot_surface(t.L,t.R, ax)
+            plot_surface(t.new_pts[0],t.new_pts[-1], ax)
             # plot_offset(t.L,t.R, ax)
 
-            '''Apply Z offset'''
-        top_mesh.show()
-        project_up(base_mesh, top_mesh)
+        base_normal_index = project_up(base_mesh, top_mesh)
+        for v in base_normal_index:
+            base_mesh.inc_z_off(v)
+        
+        # unmerge so viewer doesn't smooth
+        base_mesh.mesh.unmerge_vertices()
+        # make base_mesh white- ish
+        base_mesh.mesh.visual.face_colors = [255,255,255,255]
+        base_mesh.mesh.visual.face_colors[base_normal_index] = [255, 0, 0, 255]
+        base_mesh.mesh.show()
+    
+    # top_mesh = top_mesh.__add__(base_mesh.mesh)
     
     plt.figure(fig.number)
     plt.show()
@@ -87,12 +98,16 @@ def create_mentat_tows(plys):
             m_points = []
             m_points_R = []
             m_points_L = []
-            for i in range(len(t.points)):
-                m_points.append(Point_Mentat(t.points[i].coord.tolist()))
-                m_points_L.append(Point_Mentat(t.L[i].tolist()))
-                m_points_R.append(Point_Mentat(t.R[i].tolist()))
+            m_points_Ri = []
+            m_points_Li = []
+            for i in range(len(t.coords)):
+                m_points.append(Point_Mentat(t.coords[i]))
+                m_points_L.append(Point_Mentat(t.L_out[i]))
+                m_points_Li.append(Point_Mentat(t.L_in[i]))
+                m_points_R.append(Point_Mentat(t.R_out[i]))
+                m_points_Ri.append(Point_Mentat(t.R_in[i]))
 
-            new_tow = Tow_Mentat(t._id, m_points, m_points_L, m_points_R, t.t, t.w, ply=t.ply)
+            new_tow = Tow_Mentat(t._id, m_points, m_points_L, m_points_R, m_points_Li, m_points_Ri, t.t, t.w, ply=t.ply)
             new_tow = batch_tows(new_tow, length)
             m_tows.append(new_tow)
 
@@ -110,15 +125,19 @@ def batch_tows(tow, length):
     while i + length < len(tow.pts):
         p = tow.pts[i:i+length]
         l = tow.pts_L[i:i+length]
+        li = tow.pts_Li[i:i+length]
         r = tow.pts_R[i:i+length]
-        new = Tow_Mentat(tow._id, p,l,r,tow.t,tow.w)
+        ri = tow.pts_Ri[i:i+length]
+        new = Tow_Mentat(tow._id, p,l,r,li,ri,tow.t,tow.w)
         batch.append(new)
         i += length - 1
     # Add remaining points from end of tow
     p = tow.pts[i:]
     l = tow.pts_L[i:]
+    li = tow.pts_Li[i:]
     r = tow.pts_R[i:]
-    new = Tow_Mentat(tow._id, p,l,r,tow.t,tow.w)
+    ri = tow.pts_Ri[i:]
+    new = Tow_Mentat(tow._id, p,l,r,li,ri,tow.t,tow.w)
     batch.append(new)
 
     return batch
@@ -131,16 +150,48 @@ def print_tow_batch(tow):
 
 
 # Interpolate for additional points between each curve
-def interpolate_tow_points(coords):
-    print("len orig = ", len(coords))
-    points = []
-    curve = fit.interpolate_curve(coords, 1)
-    curve.delta = 0.005
-    print("len eval = ", len(curve.evalpts))
-
-    evalpts = np.array(curve.evalpts)
+def interpolate_tow_points(points, target_length):
     
-    return evalpts
+    # Batch up for large tows
+    batch = []
+    new_batch = []
+    i = 0
+    batch_sz = 100
+    while(i + batch_sz < len(points)):
+        batch.append(points[i:i+batch_sz])
+        i += batch_sz -1
+    batch.append(points[i:])
+    # print([len(i) for i in batch])
+
+    for b in batch:
+        if len(b) <= 2:
+            order = 1
+        elif len(b) == 3:
+            order = 2
+        else:
+            order = 3
+
+        # get length of batch curve
+        v1s = np.array(b[1:])
+        v2s = np.array(b[:-1])
+        diff = v2s - v1s
+        length = sum([np.linalg.norm(x) for x in diff])
+        delta = min(target_length/length,0.99)
+        
+        # print(f"length = {length} batch = {len(b)} d={delta}")
+
+        curve = fit.interpolate_curve(b,order)
+        curve.delta = delta
+        evalpts = curve.evalpts
+        new_batch += evalpts
+        # print(f"length new = {len(evalpts)}")
+    
+        # for i in range(len(evalpts)-1):
+            # print(f"l = {np.linalg.norm(np.array(evalpts[i+1]) - np.array(evalpts[i]))}")
+
+    # stitch new batch back together
+    
+    return np.array(new_batch)
 
 
     """ INTERP BETWEEN POINTS TO KEEP CURRENT POINTS """
