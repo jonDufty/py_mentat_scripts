@@ -41,7 +41,7 @@ def main(plys, geom):
             '''
             for i in range(len(t.new_pts)):
                 t.new_pts[i] = interpolate_tow_points(t.new_pts[i], t.w/2)
-
+            t.get_new_normals()
             # t.coords = interpolate_tow_points(t.coords, t.w/2)
             # t.L_out = interpolate_tow_points(t.L_out, t.w/2)
             # t.L_in = interpolate_tow_points(t.L_in, t.w/2)
@@ -50,22 +50,21 @@ def main(plys, geom):
 
             t_mesh = tow_mesh(t)
             top_mesh = top_mesh.__add__(t_mesh)
-            project_down(base_mesh, t)
+
+            tow_z_array, face_z_index = project_down(base_mesh, t)
+            offset_rule(base_mesh, tow_z_array, face_z_index)
+            # base_mesh.adjust_z_off(face_z_index, tow_z_array)
+            t.z_offset(tow_z_array)
 
             # plot_points(t.points, ax)
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
             # plot_offset(t.L,t.R, ax)
 
-        base_normal_index = project_up(base_mesh, top_mesh)
-        for v in base_normal_index:
+        base_vectors = project_up(base_mesh, top_mesh)
+        for v in base_vectors:
             base_mesh.inc_z_off(v)
         
-        # unmerge so viewer doesn't smooth
-        base_mesh.mesh.unmerge_vertices()
-        # make base_mesh white- ish
-        base_mesh.mesh.visual.face_colors = [255,255,255,255]
-        base_mesh.mesh.visual.face_colors[base_normal_index] = [255, 0, 0, 255]
-        base_mesh.mesh.show()
+        base_mesh.visual(base_vectors)
     
     # top_mesh = top_mesh.__add__(base_mesh.mesh)
     
@@ -95,19 +94,12 @@ def create_mentat_tows(plys):
     for p in plys:
         m_tows = []
         for t in p.tows:
-            m_points = []
-            m_points_R = []
-            m_points_L = []
-            m_points_Ri = []
-            m_points_Li = []
-            for i in range(len(t.coords)):
-                m_points.append(Point_Mentat(t.coords[i]))
-                m_points_L.append(Point_Mentat(t.L_out[i]))
-                m_points_Li.append(Point_Mentat(t.L_in[i]))
-                m_points_R.append(Point_Mentat(t.R_out[i]))
-                m_points_Ri.append(Point_Mentat(t.R_in[i]))
+            m_points = [[],[],[],[],[]]
+            for i in range(len(t.new_pts[0])):
+                for j in range(len(m_points)):
+                    m_points[j].append(Point_Mentat(t.new_pts[j][i]))
 
-            new_tow = Tow_Mentat(t._id, m_points, m_points_L, m_points_R, m_points_Li, m_points_Ri, t.t, t.w, ply=t.ply)
+            new_tow = Tow_Mentat(t._id, m_points, t.t, t.w, ply=t.ply)
             new_tow = batch_tows(new_tow, length)
             m_tows.append(new_tow)
 
@@ -117,27 +109,24 @@ def create_mentat_tows(plys):
     return m_plys   
 
 def batch_tows(tow, length):
-    if len(tow.pts) < length:
+    if len(tow.pts[0]) < length:
         return [tow]
 
     batch = []
     i = 0
     while i + length < len(tow.pts):
-        p = tow.pts[i:i+length]
-        l = tow.pts_L[i:i+length]
-        li = tow.pts_Li[i:i+length]
-        r = tow.pts_R[i:i+length]
-        ri = tow.pts_Ri[i:i+length]
-        new = Tow_Mentat(tow._id, p,l,r,li,ri,tow.t,tow.w)
+        batch_tow = [[],[],[],[],[]]
+        for j in range(len(batch_tow)):
+            batch_tow[j] = tow.pts[j][i:i+length]
+            
+        new = Tow_Mentat(tow._id, batch_tow,tow.t,tow.w)
         batch.append(new)
         i += length - 1
     # Add remaining points from end of tow
-    p = tow.pts[i:]
-    l = tow.pts_L[i:]
-    li = tow.pts_Li[i:]
-    r = tow.pts_R[i:]
-    ri = tow.pts_Ri[i:]
-    new = Tow_Mentat(tow._id, p,l,r,li,ri,tow.t,tow.w)
+    batch_tow = [[],[],[],[],[]]
+    for j in range(len(batch_tow)):
+        batch_tow[j] = tow.pts[j][i:]
+    new = Tow_Mentat(tow._id, batch_tow,tow.t,tow.w)
     batch.append(new)
 
     return batch

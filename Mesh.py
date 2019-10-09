@@ -11,7 +11,7 @@ class Mesh():
         self._z_off = self.__init_z()
 
     def __init_z(self):
-        return [0]*len(self.mesh.faces)
+        return np.empty(len(self.mesh.faces),dtype='int32')
 
     @property
     def z_off(self):
@@ -19,6 +19,28 @@ class Mesh():
 
     def inc_z_off(self, index):
         self._z_off[index] += 1
+
+    def adjust_z_off(self, index, array):
+        index = index.flatten()
+        index = index.astype('int32')
+        print(index.max())
+        self._z_off[index.flatten()] = array.flatten()
+
+    def visual(self, faces_to_colour, vector_origins = [], vector_normals=[], scale=2.0):
+        # unmerge so viewer doesn't smooth
+        self.mesh.unmerge_vertices()
+        # make base_mesh white- ish
+        self.mesh.visual.face_colors = [255,255,255,255]
+        self.mesh.visual.face_colors[faces_to_colour] = [255, 0, 0, 255]
+        
+        if vector_origins != [] and vector_normals != []:
+            # stack rays into line segments for visualization as Path3D
+            ray_visualize = trimesh.load_path(np.hstack((vector_origins, vector_origins + vector_normals*scale)).reshape(-1, 2, 3))
+            scene = trimesh.Scene([self.mesh, ray_visualize])
+        else:
+            scene = trimesh.Scene([self.mesh])
+        
+        scene.show()
 
 
 def tow_mesh(t):
@@ -31,8 +53,9 @@ def tow_mesh(t):
         v4 = t.new_pts[-1][i]
         mesh_segment = Trimesh(vertices=[v1,v2,v3,v4], faces = [[0,1,2,3]])
         mesh = mesh.__add__(mesh_segment)
-    # mesh.invert()
     return mesh
+
+
 
 
 """ 
@@ -40,27 +63,62 @@ Projects down from tow points using vectors from FPM data
 onto base mesh using similar method to project up
 """
 def project_down(base_mesh, t):
-    normals = t.get_new_normals()
+    normals = t.new_normals
+    tow_z_array = np.empty((5,len(normals))).astype('int32')
+    face_z_index = np.empty((5,len(normals))).astype('int32')
+    face_z_index_flat = face_z_index.flatten().astype('int32')
     for i in range(len(t.new_pts)):
         tow_origins = t.new_pts[i][:]
         locations, vec_index, tri_index = base_mesh.mesh.ray.intersects_location(tow_origins, normals, multiple_hits=False)
-        for j in range(len(vec_index)):
+        hits = base_mesh.z_off[tri_index]
+        tow_z_array[i][vec_index] = base_mesh.z_off[tri_index]
+        face_z_index[i][vec_index] = tri_index.copy()
+        face_z_index_flat[i*len(normals) + vec_index] = tri_index
+
+        '''for j in range(len(vec_index)):
             t.new_pts[i][vec_index[j]] -= normals[i]*base_mesh.z_off[tri_index[j]]
-            pass
-        '''
-        Debugging visuals
-        print('The rays with index: {} hit the triangles stored at mesh.faces[{}]'.format(vec_index, tri_index))
-        print('The rays with index: {} hit the triangles stored at mesh.faces[{}]'.format(vec_index, tri_index))
-        # stack rays into line segments for visualization as Path3D
-        ray_visualize = trimesh.load_path(np.hstack((tow_origins +normals*-20.0, tow_origins + normals*20.0)).reshape(-1, 2, 3))
+            pass'''
+    return tow_z_array, face_z_index
+        
 
-        scene = trimesh.Scene([base_mesh, ray_visualize])
-        scene.show()
-        '''
-    return True
+"""
+Checks each offset with neighbouring points to determine whether to include
+it or not.
+Returns index of array entries that were modified from the rul
+"""
+def offset_rule(base_mesh, z_array, face_index):
+    length = len(z_array[0])
+    width = len(z_array)
+    z_initial = z_array.copy()
+    # Start with top row - index [0]
+    z_array[0][[0,-1]] = z_array[1][[1,-2]] # corner pts first
+    z_array[0][1:-2] = z_array[1][1:-2] #remaining top row
 
-    
-""" 
+    # bottom edge
+    z_array[-1][[0,-1]] = z_array[-2][[1,-2]] # corner pts first
+    z_array[-1][1:-2] = z_array[-2][1:-2] #remaining pts
+
+    #side edges
+    z_array[1:-2][0] = z_array[1:-2][1] #left edge
+    z_array[1:-2][-1] = z_array[1:-2][-2] #left edge
+
+    # remaining points - can't use indexing so have to iterrate
+    for i in range(width -1):
+        j = 0
+        for j in range(length - 1):
+            top = z_array[i-1][j]
+            bot = z_array[i+1][j]
+            left = z_array[i][j-1]
+            right = z_array[i][j+1]
+            if j == 2: #middle row
+                z_array[i][j] = max(top,bot,left,right)
+            elif j ==1:
+                z_array[i][j] = max(bot,left,right)
+            else:
+                z_array[i][j] = max(top,left,right)
+    return    
+
+"""
 Checks the face normals projected up towards the tows
 Performs Breadth-first search based on adjacent faces
 """
@@ -69,19 +127,9 @@ def project_up(base_mesh, tow_mesh):
     mesh = base_mesh.mesh
     base_vectors = mesh.face_normals
     base_origins = mesh.triangles_center
-
     locations, vec_index, tri_index = tow_mesh.ray.intersects_location(base_origins, base_vectors, multiple_hits=False)
 
-    '''
-    Debugging visuals
-    # stack rays into line segments for visualization as Path3D
-    ray_visualize = trimesh.load_path(np.hstack((base_origins, base_origins + base_vectors*20.0)).reshape(-1, 2, 3))
-
-    scene = trimesh.Scene([tow_mesh, ray_visualize])
-    scene.show()
-    '''
-    # base_mesh.z_off[vec_index] += 1
-
+    base_mesh.inc_z_off(vec_index)
     return vec_index
             
             
