@@ -26,43 +26,39 @@ def main(plys, geom):
     # Initialise base mesh for offset
     base_stl = trimesh.load("/".join(["stl_files","panel" + ".stl"]))
     base_mesh = Mesh(base_stl)
-    # base_mesh.mesh.show()
+
     for p in plys:
-        top_mesh = Trimesh()
+        # Create new mesh to represent the tows on top
+        top_mesh = Trimesh() 
         
         # Iterate through each tow
         for t in p.tows:
-            # for now do z offset before ortho offset
-            # t.z_offset()
-            t.ortho_offset(t.w)
+            t.ortho_offset(t.w) #Create offsets in transverse directions
 
-            '''
-            Insert interpolating feature once fixed
-            '''
             for i in range(len(t.new_pts)):
+                # Interpolate between the points, with the target point distance being t.w/2
+                # Where t.w = 3.25 currently.
                 t.new_pts[i] = interpolate_tow_points(t.new_pts[i], t.w/2)
             t.get_new_normals()
-            # t.coords = interpolate_tow_points(t.coords, t.w/2)
-            # t.L_out = interpolate_tow_points(t.L_out, t.w/2)
-            # t.L_in = interpolate_tow_points(t.L_in, t.w/2)
-            # t.R_in = interpolate_tow_points(t.R_in, t.w/2)
-            # t.R_out = interpolate_tow_points(t.R_out, t.w/2)
 
             t_mesh = tow_mesh(t)
             top_mesh = top_mesh.__add__(t_mesh)
 
             tow_z_array, face_z_index = project_down(base_mesh, t)
             offset_rule(base_mesh, tow_z_array, face_z_index)
-            # base_mesh.adjust_z_off(face_z_index, tow_z_array)
+            base_mesh.adjust_z_off(face_z_index, tow_z_array)
             t.z_offset(tow_z_array)
 
             # plot_points(t.points, ax)
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
             # plot_offset(t.L,t.R, ax)
 
+        # Current implementation: Ignore intraply overlaps, so project up against
+        # whole ply instead of individual tows to avoid double counting
         base_vectors = project_up(base_mesh, top_mesh)
-        for v in base_vectors:
-            base_mesh.inc_z_off(v)
+
+        # for v in base_vectors:
+            # base_mesh.inc_z_off(v)
         
         base_mesh.visual(base_vectors)
     
@@ -75,6 +71,9 @@ def main(plys, geom):
     
     return m_plys
 
+""" 
+REDUNANT CLASS: Will remove
+"""
 def create_ply_index(m_tows):
     ply = {}
     for t in m_tows:
@@ -85,7 +84,10 @@ def create_ply_index(m_tows):
     return ply
 
 
-# Create Marc/py_mentat compatible class
+""" 
+Create Marc/py_mentat compatible class
+returns: PlyMentat(TowMentat(PointMentat)) classes
+"""
 def create_mentat_tows(plys):
     m_plys = []
     tow_idx = 1
@@ -108,6 +110,10 @@ def create_mentat_tows(plys):
 
     return m_plys   
 
+"""  
+Batches TowMentat classes into batches containing $length number of poitns
+This is to prevent Marc from crashing when passing in too many points
+"""
 def batch_tows(tow, length):
     if len(tow.pts[0]) < length:
         return [tow]
@@ -131,14 +137,12 @@ def batch_tows(tow, length):
 
     return batch
 
-
-def print_tow_batch(tow):
-    print(f"batches = {len(tow)}")
-    for t in tow:
-        print(f"tow {t._id}", f"length = {len(t.pts)}")
-
-
-# Interpolate for additional points between each curve
+""" 
+Takes in array of points, and interpolates in between them using geomdl package
+Interpoaltes to a level such that the distance between points is roughly equal to 
+$target_length
+Interpolates in batches, as large arrays can cause errors
+"""
 def interpolate_tow_points(points, target_length):
     
     # Batch up for large tows
@@ -150,45 +154,38 @@ def interpolate_tow_points(points, target_length):
         batch.append(points[i:i+batch_sz])
         i += batch_sz -1
     batch.append(points[i:])
-    # print([len(i) for i in batch])
 
     for b in batch:
-        if len(b) <= 2:
+        if len(b) <= 2:     #If only two points - linear interpolation
             order = 1
-        elif len(b) == 3:
+        elif len(b) == 3:   #If 3 poits - quadratic interpolation
             order = 2
-        else:
+        else:               # if > 3 pts - cubic interpolation
             order = 3
 
         # get length of batch curve
         v1s = np.array(b[1:])
         v2s = np.array(b[:-1])
         diff = v2s - v1s
-        length = sum([np.linalg.norm(x) for x in diff])
-        delta = min(target_length/length,0.99)
+        length = sum([np.linalg.norm(x) for x in diff]) #Get total length of distances between each point
         
-        # print(f"length = {length} batch = {len(b)} d={delta}")
-
+        # Delta dictates how many 'evenly' spaced points the interpolation funciton will output.
+        # Roughly equal to 1/n_points-1 - (e.g. delta = 0.01 --> 1/100 --> 101 points).
+        # Delta must be < 1, so min() statement is too ensure this (bit hacky atm)
+        delta = min(target_length/length,0.99) 
+        
+        # call the interpolate curve function
         curve = fit.interpolate_curve(b,order)
         curve.delta = delta
-        evalpts = curve.evalpts
-        new_batch += evalpts
-        # print(f"length new = {len(evalpts)}")
+        evalpts = curve.evalpts     #evalpts is the new list of interpolated points
+        new_batch += evalpts        #stich batches back together as created
     
-        # for i in range(len(evalpts)-1):
-            # print(f"l = {np.linalg.norm(np.array(evalpts[i+1]) - np.array(evalpts[i]))}")
-
-    # stitch new batch back together
-    
+    # Evalpts is of type list, need to return as numpy array
     return np.array(new_batch)
 
-
-    """ INTERP BETWEEN POINTS TO KEEP CURRENT POINTS """
-
-    pass      
-
-
-# Dump new tow data
+""" 
+Dump ply/tow data into pickle object
+"""
 def save_tows(obj, name):
     file_end = name + ".dat"
     file_name = '/'.join(['dat_files','batched',file_end])
@@ -198,6 +195,11 @@ def save_tows(obj, name):
     print("save successful")
 
 
+
+"""  
+Plot spline, surface, points are all just different plot functions
+Mainly used for debugging
+"""
 def plot_spline(tck):
     xn, yn = np.mgrid[-100:100:500j, -100:100:500j]
     zn = ip.bisplev(xn[:,0], yn[0,:], tck)
@@ -249,8 +251,11 @@ if __name__ == '__main__':
     if len(sys.argv) is 1:
         exit("Specify file name to import")
 
+    # Take in argument with geometry name (used for file lookup)
     geom = sys.argv[1]
+    # Import the tow date
     plys = fpm.get_tows(geom)
+    # get ply/tow/point data and manipulate accordingly
     marc_ply = main(plys, geom)
 
     save_tows(marc_ply, sys.argv[1])
