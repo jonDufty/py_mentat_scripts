@@ -23,9 +23,8 @@ def main(plys, geom):
     fig = plt.figure()
     ax = fig.add_subplot(111,projection='3d')
 
-    # Initialise base mesh for offset
-    base_stl = trimesh.load("/".join(["stl_files","panel" + ".stl"]))
-    base_mesh = Mesh(base_stl)
+    # Create a base_mesh to represent currently laid down tows
+    base_mesh = Trimesh()
 
     for p in plys:
         # Create new mesh to represent the tows on top
@@ -33,43 +32,45 @@ def main(plys, geom):
         
         # Iterate through each tow
         for t in p.tows:
+            # Add additional points and vector information
             t.ortho_offset(t.w) #Create offsets in transverse directions
-
             for i in range(len(t.new_pts)):
                 # Interpolate between the points, with the target point distance being t.w/2
                 # Where t.w = 3.25 currently.
                 t.new_pts[i] = interpolate_tow_points(t.new_pts[i], t.w/2)
             t.get_new_normals()
 
-            t_mesh = tow_mesh(t)
-            top_mesh = top_mesh.__add__(t_mesh)
+            # Create mesh, and adjust z offsets
 
-            tow_z_array, face_z_index = project_down(base_mesh, t)
-            offset_rule(base_mesh, tow_z_array, face_z_index)
-            base_mesh.adjust_z_off(face_z_index, tow_z_array)
-            t.z_offset(tow_z_array)
+            if not base_mesh.is_empty:
+                project_tow_points(base_mesh, t)
 
-            # plot_points(t.points, ax)
+            # Merge to new mesh (i.e. "lay down tow")
+            t.generate_tow_mesh()
+            base_mesh = base_mesh.__add__(tow_mesh(t))
+            base_mesh.show()
+
+            # Plot points for visuals
+
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
-            # plot_offset(t.L,t.R, ax)
 
         # Current implementation: Ignore intraply overlaps, so project up against
         # whole ply instead of individual tows to avoid double counting
-        base_vectors = project_up(base_mesh, top_mesh)
+        # base_vectors = project_up(base_mesh, top_mesh)
 
         # for v in base_vectors:
             # base_mesh.inc_z_off(v)
         
-        base_mesh.visual(base_vectors)
+        # base_mesh.visual(base_vectors=[])
     
     # top_mesh = top_mesh.__add__(base_mesh.mesh)
     
     plt.figure(fig.number)
     plt.show()
         
-    m_plys = create_mentat_tows(plys)
+    # m_plys = create_mentat_tows(plys)
     
-    return m_plys
+    return plys
 
 """ 
 REDUNANT CLASS: Will remove
@@ -101,7 +102,7 @@ def create_mentat_tows(plys):
                 for j in range(len(m_points)):
                     m_points[j].append(Point_Mentat(t.new_pts[j][i]))
 
-            new_tow = Tow_Mentat(t._id, m_points, t.t, t.w, ply=t.ply)
+            new_tow = Tow_Mentat(t._id, m_points, t.t, t.w)
             new_tow = batch_tows(new_tow, length)
             m_tows.append(new_tow)
 

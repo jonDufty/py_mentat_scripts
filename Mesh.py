@@ -8,7 +8,7 @@ Wrapper class for trimesh with custom functions and bookeeping of global mesh
 class Mesh():
     def __init__(self, mesh):
         self.mesh = mesh                #the Trimesh object
-        self._z_off = self.__init_z()   #Array the same size as faces, keeping track of z-offsets
+        self._z_off = self.__init_z()   #CAN REMOVE MAYBE
 
     def __init_z(self):
         return np.array([0]*len(self.mesh.faces)) #I know this is ugly but I had to force it to zero out
@@ -42,6 +42,7 @@ class Mesh():
             scene = trimesh.Scene([self.mesh])
         scene.show()
 
+
 """  
 Creates mesh from tow coordinates to use for z offset projection
 Iterates through points and forms segments from outer points
@@ -69,27 +70,22 @@ onto base mesh using similar method to project up
 returns:    array mapping z_offset values to tow points
             array mapping base_mesh faces to z_offset array
 """
-def project_down(base_mesh, t):
-    normals = t.new_normals
+def project_tow_points(base_mesh, tow):
+    normals = tow.new_normals
     tow_z_array = np.array([[0]*len(normals)]*5)
-    face_z_index = np.array([[-1]*len(normals)]*5)
-    for i in range(len(t.new_pts)):
-        tow_origins = t.new_pts[i][:]
-        print("Before")
-        print(base_mesh.mesh.vertices[base_mesh.mesh.faces[0]])
-        locations, vec_index, tri_index = base_mesh.mesh.ray.intersects_location(tow_origins, normals, multiple_hits=False)
-        print("After")
-        print(base_mesh.mesh.vertices[base_mesh.mesh.faces[0]])
-        hits = base_mesh.z_off[tri_index]
-        # tow_z_array.append(base_mesh.z_off[tri_index])
-        tow_z_array[i][vec_index] = base_mesh.z_off[tri_index]
-        # face_z_index.append(tri_index.copy())
-        face_z_index[i][vec_index] = tri_index.copy()
+    tow.next_pts = tow.new_pts.copy()
 
-        '''for j in range(len(vec_index)):
-            t.new_pts[i][vec_index[j]] -= normals[i]*base_mesh.z_off[tri_index[j]]
-            pass'''
-    return tow_z_array, face_z_index
+    for i in range(len(tow.new_pts)):
+        tow_origins = tow.new_pts[i][:]
+        locations, vec_index, tri_index = base_mesh.ray.intersects_location(tow_origins, normals, multiple_hits=False)
+        
+        offsets = normals[vec_index]*tow.t
+        new_locations = locations - offsets
+        tow.next_pts[i][vec_index] = new_locations
+        tow.new_pts[i][vec_index] = new_locations
+
+        tow_z_array[i][vec_index] += 1
+    return tow_z_array
         
 
 """

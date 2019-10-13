@@ -18,7 +18,10 @@ with open("tows.dat", 'rb') as fp:
 mesh = trimesh.Trimesh(vertices=[[400,-200,25.4],[1000,-200,25.4],[1000,200,25.4],[400,200,25.4]],
                         faces = [[0,1,2,3]])
 
-mesh = subdivide_it(mesh,3.5)
+""" 
+NOTE: USE THIS TO DETERMINE how fine the mesh should be
+"""
+mesh = subdivide_it(mesh,6)
 
 # print("mesh", mesh.faces, "\n\n")
 

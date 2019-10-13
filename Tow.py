@@ -2,7 +2,10 @@
 from Point import Point
 from Vector import Vector
 import numpy as np
+import Mesh
+from trimesh import Trimesh
 from geomdl import fitting as fit
+
 
 class Tow():
     t_id = 0
@@ -13,14 +16,10 @@ class Tow():
         self.w = tow_w
         self.t = tow_t
         self.coords = [] #This is for the interpolated values
-        self.L_in = [] #TO REMOVE
-        self.L_out = [] #TO REMOVE
-        self.R_in = []#TO REMOVE
-        self.R_out = [] #TO REMOVE
         self.new_pts = [[],[],[],[],[]] #Will eventually rename
         self.new_normals = []
-        self.z = z_off #TO REMOVE
-        self.ply = ply #TO REMOVE
+        self.next_pts = []
+        self.mesh = None
 
     def _gen_id(self):
         Tow.t_id += 1
@@ -90,5 +89,23 @@ class Tow():
         norm = np.linalg.norm(v)
         if norm == 0:
             return v
-        return v / norm          
+        return v / norm 
+
+    # Once interpolated, generate mesh to represent tow
+    def generate_tow_mesh(self):
+        mesh = Trimesh()
+        pts = np.array(self.new_pts)
+        for i in range(len(self.new_pts[0])-1):
+            v1 = self.new_pts[0][i]
+            v2 = self.new_pts[0][i+1]
+            v3 = self.new_pts[-1][i+1]
+            v4 = self.new_pts[-1][i]
+
+        # Form mesh square from 4 coordinates
+        mesh_segment = Trimesh(vertices=[v1,v2,v3,v4], faces = [[0,1,2,3]])
+        # Add segment to overall tow mesh
+        mesh = mesh.__add__(mesh_segment)
+
+        self.mesh = mesh
+
         
