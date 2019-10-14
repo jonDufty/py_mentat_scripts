@@ -108,4 +108,8 @@ class Tow():
 
         self.mesh = mesh
 
+    
+    def adjust_mesh_edges(self, z_array):
+        pass
+
         

@@ -48,7 +48,7 @@ def main(plys, geom):
             # Merge to new mesh (i.e. "lay down tow")
             t.generate_tow_mesh()
             base_mesh = base_mesh.__add__(tow_mesh(t))
-            base_mesh.show()
+            # base_mesh.show()
 
             # Plot points for visuals
 

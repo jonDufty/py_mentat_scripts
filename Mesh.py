@@ -27,7 +27,7 @@ class Mesh():
             self._z_off[index[i]] = array[i]
 
     # debugging plot for visualing intersecting faces
-    def visual(self, faces_to_colour, vector_origins = [], vector_normals=[], scale=2.0):
+    def visualize_mesh(self, faces_to_colour, vector_origins = [], vector_normals=[], scale=2.0):
         # unmerge so viewer doesn't smooth
         self.mesh.unmerge_vertices()
         # make base_mesh white- ish
@@ -73,18 +73,30 @@ returns:    array mapping z_offset values to tow points
 def project_tow_points(base_mesh, tow):
     normals = tow.new_normals
     tow_z_array = np.array([[0]*len(normals)]*5)
-    tow.next_pts = tow.new_pts.copy()
+    next_pts = np.empty_like(tow.new_pts)
 
     for i in range(len(tow.new_pts)):
         tow_origins = tow.new_pts[i][:]
         locations, vec_index, tri_index = base_mesh.ray.intersects_location(tow_origins, normals, multiple_hits=False)
-        
+        if(len(vec_index) == 0):
+            return None
+        # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=tow_origins[vec_index], vector_normals=normals[vec_index])
         offsets = normals[vec_index]*tow.t
         new_locations = locations - offsets
-        tow.next_pts[i][vec_index] = new_locations
-        tow.new_pts[i][vec_index] = new_locations
-
+        next_pts[i][vec_index] = new_locations
+        # tow.new_pts[i][vec_index] = new_locations
         tow_z_array[i][vec_index] += 1
+
+
+    adjusted_z_array = edge_offset_rule(tow_z_array)
+
+    for i in range(len(adjusted_z_array)):
+        tmp = adjusted_z_array[i]
+        adjust_pts = np.where(adjusted_z_array[i] == 1)
+        test = next_pts[i][adjust_pts[0]]
+        tow.new_pts[i][adjust_pts[0]] = next_pts[i][adjust_pts[0]]
+    
+
     return tow_z_array
         
 
@@ -93,7 +105,7 @@ Checks each offset with neighbouring points to determine whether to include
 it or not.
 Returns index of array entries that were modified from the rul
 """
-def offset_rule(base_mesh, z_array, face_index):
+def edge_offset_rule(z_array):
     length = len(z_array[0])
     width = len(z_array)
     z_initial = z_array.copy()
@@ -103,13 +115,16 @@ def offset_rule(base_mesh, z_array, face_index):
 
     # bottom edge
     z_array[-1][[0,-1]] = z_array[-2][[1,-2]] # corner pts first
-    z_array[-1][1:-2] = z_array[-2][1:-2] #remaining pts
+    tmp = z_array[-1][1:-2]
+    tmp = z_array[-2][1:-2]
+    z_array[-1][1:-1] = z_array[-2][1:-1] #remaining pts
 
     #side edges
     z_array[1:-2][0] = z_array[1:-2][1] #left edge
-    z_array[1:-2][-1] = z_array[1:-2][-2] #left edge
+    z_array[1:-1][-1] = z_array[1:-1][-2] #left edge
 
     # remaining points - can't use indexing so have to iterrate
+    '''
     for i in range(width -1):
         j = 0
         for j in range(length - 1):
@@ -123,7 +138,10 @@ def offset_rule(base_mesh, z_array, face_index):
                 z_array[i][j] = max(bot,left,right)
             else:
                 z_array[i][j] = max(top,left,right)
-    return    
+    '''
+
+    # return z_array == z_initial
+    return z_array
 
 
 """
