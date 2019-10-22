@@ -17,7 +17,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/Import.py",
             "console": "integratedTerminal",
-            "args": ["panel_double_lap"],
+            "args": ["test_cross"],
             "showReturnValue": true,
             "stopOnEntry": false,
         },

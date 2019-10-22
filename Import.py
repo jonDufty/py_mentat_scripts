@@ -61,7 +61,7 @@ def main(plys, geom):
         # for v in base_vectors:
             # base_mesh.inc_z_off(v)
         
-        # base_mesh.visual(base_vectors=[])
+        base_mesh.show()
     
     # top_mesh = top_mesh.__add__(base_mesh.mesh)
     

@@ -28,18 +28,20 @@ class Mesh():
 
     # debugging plot for visualing intersecting faces
     def visualize_mesh(self, faces_to_colour, vector_origins = [], vector_normals=[], scale=2.0):
+        
+        mesh = self.mesh.copy()
         # unmerge so viewer doesn't smooth
-        self.mesh.unmerge_vertices()
+        mesh.unmerge_vertices()
         # make base_mesh white- ish
-        self.mesh.visual.face_colors = [255,255,255,255]
-        self.mesh.visual.face_colors[faces_to_colour] = [255, 0, 0, 255]
+        mesh.visual.face_colors = [105,105,105,105]
+        mesh.visual.face_colors[faces_to_colour] = [255, 0, 0, 255]
         
         if vector_origins != [] and vector_normals != []:
             # stack rays into line segments for visualization as Path3D
             ray_visualize = trimesh.load_path(np.hstack((vector_origins, vector_origins + vector_normals*scale)).reshape(-1, 2, 3))
-            scene = trimesh.Scene([self.mesh, ray_visualize])
+            scene = trimesh.Scene([mesh, ray_visualize])
         else:
-            scene = trimesh.Scene([self.mesh])
+            scene = trimesh.Scene([mesh])
         scene.show()
 
 
@@ -48,20 +50,34 @@ Creates mesh from tow coordinates to use for z offset projection
 Iterates through points and forms segments from outer points
 Return: mesh object
 """
-def tow_mesh(t):
-    vertices = []
-    mesh = Trimesh()
-    for i in range(len(t.new_pts[0])-1):
-        v1 = t.new_pts[0][i]
-        v2 = t.new_pts[0][i+1]
-        v3 = t.new_pts[-1][i+1]
-        v4 = t.new_pts[-1][i]
+def tow_mesh(tow):
+    outer_mesh = Trimesh()
+    # inner_mesh = Trimesh()
+    [L1, L2, L3, L4, L5] = tow.new_pts
+    for i in range(len(tow.new_pts[0]) - 1):
+        v1 = L5[i]  # vertices has to be anticlockwise
+        v2 = L5[i + 1]
+        v3 = L4[i + 1]
+        v4 = L4[i]
+        v5 = L3[i + 1]
+        v6 = L3[i]
+        v7 = L2[i + 1]
+        v8 = L2[i]
+        v9 = L1[i + 1]
+        v10 = L1[i]
+        outer_mesh_segment = Trimesh(vertices=[v1, v2, v3, v4,v5,v6,v7,v8,v9,v10], faces=[[0,1,2],[2,3,0],
+                                                                                          [3,2,4],[3,4,5],
+                                                                                          [5,4,6],[6,7,5],
+                                                                                          [7,6,8],[8,9,7]])
+        # inner_mesh_segment = Trimesh(vertices=[v5, v6, v7, v8], faces=[[0, 1, 2, 3]])
+        if i == 0:
+            outer_mesh = outer_mesh_segment
+            # inner_mesh = inner_mesh_segment
+        else:
+            outer_mesh = outer_mesh.__add__(outer_mesh_segment)
+            # inner_mesh = inner_mesh.__add__(outer_mesh_segment)
 
-        # Form mesh square from 4 coordinates
-        mesh_segment = Trimesh(vertices=[v1,v2,v3,v4], faces = [[0,1,2,3]])
-        # Add segment to overall tow mesh
-        mesh = mesh.__add__(mesh_segment)
-    return mesh
+    return outer_mesh
 
 
 """ 
@@ -71,34 +87,64 @@ returns:    array mapping z_offset values to tow points
             array mapping base_mesh faces to z_offset array
 """
 def project_tow_points(base_mesh, tow):
-    normals = tow.new_normals
-    tow_z_array = np.array([[0]*len(normals)]*5)
-    next_pts = np.empty_like(tow.new_pts)
+    tow_normals = tow.new_normals
+    project_normals = tow_normals * -1
+    tow_z_array = np.zeros_like(tow.new_pts)
+    next_pts = np.zeros_like(tow.new_pts)
+    project_origins = tow.projection_origins()
+
+    base_mesh.merge_vertices()
 
     for i in range(len(tow.new_pts)):
-        tow_origins = tow.new_pts[i][:]
-        locations, vec_index, tri_index = base_mesh.ray.intersects_location(tow_origins, normals, multiple_hits=False)
+        origins = project_origins[i][:]
+        locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
         if(len(vec_index) == 0):
             return None
-        # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=tow_origins[vec_index], vector_normals=normals[vec_index])
-        offsets = normals[vec_index]*tow.t
-        new_locations = locations - offsets
-        next_pts[i][vec_index] = new_locations
-        # tow.new_pts[i][vec_index] = new_locations
-        tow_z_array[i][vec_index] += 1
+        
+        # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=7)
+        offsets = tow_normals[vec_index]*tow.t
+        new_locations = locations + offsets
+        offset_dist = new_locations - tow.new_pts[i][vec_index]
+        tow_z_array[i][vec_index] = offset_dist
 
-
-    adjusted_z_array = edge_offset_rule(tow_z_array)
+    adjusted_z_array = outliers_rule(tow_z_array)
+    adjusted_z_array = edge_offset_rule(adjusted_z_array)
 
     for i in range(len(adjusted_z_array)):
-        tmp = adjusted_z_array[i]
-        adjust_pts = np.where(adjusted_z_array[i] == 1)
-        test = next_pts[i][adjust_pts[0]]
-        tow.new_pts[i][adjust_pts[0]] = next_pts[i][adjust_pts[0]]
-    
+        adjust_pts = np.where(adjusted_z_array[i] > tow.t/2)[0]
+        offsets = tow_normals[adjust_pts]*adjusted_z_array[i][adjust_pts]
+        next_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets
+        tow.new_pts[i][adjust_pts] = next_pts[i][adjust_pts]
 
     return tow_z_array
-        
+
+
+"""  
+Iterrates through Z array, and if a value does not equal its
+surrounding values, will be equated to surrounding values (to avoid random outliers)
+Currently loops thorugh, will find more efficient solution later
+"""
+def outliers_rule(z):
+    numerical_error = 0.01
+    for i in range(1,len(z)-1):
+        for j in range(1,len(z[i])-1):
+            norm = np.linalg.norm
+            truth1 = norm(z[i,j] - z[i,j-1]) < numerical_error
+            truth2 = norm(z[i,j] - z[i,j+1]) < numerical_error
+            if(norm(z[i,j,-1] - z[i,j-1,-1]) < numerical_error) and (norm(z[i,j,-1] - z[i,j+1,-1]) < numerical_error):
+                z[i,j] = z[i,j+1]
+    return z
+
+                    
+
+# def outliers_rule(z_array):     # Loop the columns
+#     new_z = z_array.copy()
+#     numerical_error = 0.01
+#     for i in range(len(z_array[0])):
+#         if abs(z_array[1][i][2] - z_array[2][i][2]) < numerical_error and abs(z_array[1][i][2] - z_array[3][i][2])< numerical_error:
+#             new_z[0][i][2] = z_array[2][i][2]
+#             new_z[4][i][2] = z_array[2][i][2]
+#     return new_z
 
 """
 Checks each offset with neighbouring points to determine whether to include
@@ -109,6 +155,7 @@ def edge_offset_rule(z_array):
     length = len(z_array[0])
     width = len(z_array)
     z_initial = z_array.copy()
+
     # Start with top row - index [0]
     z_array[0][[0,-1]] = z_array[1][[1,-2]] # corner pts first
     z_array[0][1:-2] = z_array[1][1:-2] #remaining top row

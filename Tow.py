@@ -73,12 +73,12 @@ class Tow():
         for i in range(len(vecs)-1):
             v1 = self.normalize(vecs[i+1] - vecs[i])    #Orientation vector
             v2 = self.normalize(right[i] - vecs[i])     #Transverse vector
-            normals.append(np.cross(v2,v1).tolist())    #Generate normal vector as list (not numpy yet)
+            normals.append(np.cross(v1,v2).tolist())    #Generate normal vector as list (not numpy yet)
         
         # Append final points
         v1 = self.normalize(right[-1]-vecs[-1])
         v2 = self.normalize(vecs[-1]-vecs[-2])
-        normals.append(np.cross(v2*-1,v1).tolist())
+        normals.append(np.cross(v2,v1).tolist())
 
         # Now convert into np array so that the form is nparray(n,3) instead of nested array
         self.new_normals = np.array(normals)
@@ -105,11 +105,47 @@ class Tow():
         mesh_segment = Trimesh(vertices=[v1,v2,v3,v4], faces = [[0,1,2,3]])
         # Add segment to overall tow mesh
         mesh = mesh.__add__(mesh_segment)
+        mesh = mesh.invert()
 
         self.mesh = mesh
 
     
     def adjust_mesh_edges(self, z_array):
         pass
+
+    def projection_origins(self, edge_tolerance=0.3):
+        dist = 5 + self._id
+        copy = np.array(self.new_pts)
+        offsets = self.new_normals*dist
+        origins = np.empty_like(copy)
+        for i in range(len(copy)):
+            origins[i][:] = copy[i][:] + offsets
+
+        # adjust origins to avoid cases
+        origins = self.projection_edge_tolerance(origins, edge_tolerance)
+        
+        return origins 
+
+    
+    """ 
+    Adjust outside points to miss edge contacts within tolerance
+    """
+    def projection_edge_tolerance(self, origins, tolerance):
+        outer_r = origins[0]
+        outer_l = origins[-1]
+        
+        offset = origins[1] - origins[0]
+        offset_unit = np.array([self.normalize(v) for v in offset])
+        origins[0] += offset_unit*tolerance
+
+        offset = origins[-2] - origins[-1]
+        offset_unit = np.array([self.normalize(v) for v in offset])
+        origins[-1] += offset_unit*tolerance
+
+        return origins
+
+
+
+
 
         

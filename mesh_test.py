@@ -18,10 +18,16 @@ with open("tows.dat", 'rb') as fp:
 mesh = trimesh.Trimesh(vertices=[[400,-200,25.4],[1000,-200,25.4],[1000,200,25.4],[400,200,25.4]],
                         faces = [[0,1,2,3]])
 
+mesh.merge_vertices()
+
+print("edges",(mesh.edges_unique))
+print("unique_edges",(mesh.edges_face))
+print("adjacent edges", (mesh.face_adjacency_edges))
+
 """ 
 NOTE: USE THIS TO DETERMINE how fine the mesh should be
 """
-mesh = subdivide_it(mesh,6)
+# mesh = subdivide_it(mesh,6)
 
 # print("mesh", mesh.faces, "\n\n")
 
@@ -66,6 +72,6 @@ scene = trimesh.Scene([mesh,
 
 scene.show()
 
-mesh.export('stl_files/panel.stl')
+# mesh.export('stl_files/panel.stl')
 
 
