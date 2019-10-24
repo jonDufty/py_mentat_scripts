@@ -54,13 +54,6 @@ def main(plys, geom):
 
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
 
-        # Current implementation: Ignore intraply overlaps, so project up against
-        # whole ply instead of individual tows to avoid double counting
-        # base_vectors = project_up(base_mesh, top_mesh)
-
-        # for v in base_vectors:
-            # base_mesh.inc_z_off(v)
-        
         base_mesh.show()
     
     # top_mesh = top_mesh.__add__(base_mesh.mesh)
@@ -68,9 +61,9 @@ def main(plys, geom):
     plt.figure(fig.number)
     plt.show()
         
-    # m_plys = create_mentat_tows(plys)
+    m_plys = create_mentat_tows(plys)
     
-    return plys
+    return m_plys
 
 """ 
 REDUNANT CLASS: Will remove
@@ -92,7 +85,7 @@ returns: PlyMentat(TowMentat(PointMentat)) classes
 def create_mentat_tows(plys):
     m_plys = []
     tow_idx = 1
-    length = 100
+    length = 200
 
     for p in plys:
         m_tows = []
@@ -100,7 +93,7 @@ def create_mentat_tows(plys):
             m_points = [[],[],[],[],[]]
             for i in range(len(t.new_pts[0])):
                 for j in range(len(m_points)):
-                    m_points[j].append(Point_Mentat(t.new_pts[j][i]))
+                    m_points[j].append(Point_Mentat(t.new_pts[j][i].tolist()))
 
             new_tow = Tow_Mentat(t._id, m_points, t.t, t.w)
             new_tow = batch_tows(new_tow, length)

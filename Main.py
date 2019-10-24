@@ -7,7 +7,7 @@ import os
 
 def main():
 
-	plys = load_tows("panel_double.dat")
+	plys = load_tows("test_cross.dat")
 	# General variables
 	thick = plys[0].tows[0][0].t
 	width = plys[0].tows[0][0].w
@@ -133,8 +133,8 @@ def load_tows(file):
 	file_name = "\\".join([cwd,'dat_files',f])
 	# file_name = "/".join([cwd,'tows.dat']) #for linux FS
 	with open(file_name,'rb') as f:
-		tows,ply = pickle.load(f)
-	return tows,ply
+		ply = pickle.load(f)
+	return ply
 
 
 def generate_points(point):
@@ -169,24 +169,21 @@ def generate_elements(surf_name, n_elements):
 def create_tow_shell(tow_list):
 
 	# el_size = float((tow_list.w)) #change when batched
-	el_size = float((tow_list[0].w)) #change when batched
-	print(el_size)
-	# surf_set = "".join(["surf",str(tow_list._id)])
+	el_size = float((tow_list[0].w/2)) #change when batched
 	surf_set = "".join(["surf",str(tow_list[0]._id)])
-	print(surf_set)
-
+	print(tow_list[0].name())
 	for tow in tow_list:
 		# Generate curves from points on L,R of tow path
-		curve_l = generate_curve(tow.pts_L)
-		curve_r = generate_curve(tow.pts_R)
-		#curve_f = generate_curve([tow.pts_L[0], tow.pts_R[0]])
-		#curve_r = generate_curve([tow.pts_L[-1], tow.pts_R[-1]])
+		curves = ""
+		for row in tow.pts:
+			curve = generate_curve(row)
+			curves += (" "+curve)
 			
 		# create surface using two guide curves
 		p("*set_surface_type skin")
 		p("*set_trim_new_surfs y")
 		p("*add_surfaces")
-		p("%s %s %s" % (curve_l, curve_r, '#'))
+		p("%s %s" % (curves, '#'))
 
 		# Store surface in set (just in case)
 		# n_surf = int(py_get_float("nsurfaces()"))
@@ -226,7 +223,7 @@ def create_tow_shell(tow_list):
 	p(tow.name())
 	p("*all_selected")
 
-	p("*clear_geometry")
+	# p("*clear_geometry")
 	p("select_clear")
 	
 
