@@ -94,14 +94,14 @@ def project_tow_points(base_mesh, tow):
     project_origins = tow.projection_origins()
 
     base_mesh.merge_vertices()
-
     for i in range(len(tow.new_pts)):
         origins = project_origins[i][:]
         locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
+        
         if(len(vec_index) == 0):
             return None
         
-        # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=7)
+        # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=10)
         offsets = tow_normals[vec_index]*tow.t
         new_locations = locations + offsets
         offset_dist = new_locations - tow.new_pts[i][vec_index]
@@ -124,27 +124,27 @@ Iterrates through Z array, and if a value does not equal its
 surrounding values, will be equated to surrounding values (to avoid random outliers)
 Currently loops thorugh, will find more efficient solution later
 """
-def outliers_rule(z):
-    numerical_error = 0.01
-    for i in range(1,len(z)-1):
-        for j in range(1,len(z[i])-1):
-            norm = np.linalg.norm
-            truth1 = norm(z[i,j] - z[i,j-1]) < numerical_error
-            truth2 = norm(z[i,j] - z[i,j+1]) < numerical_error
-            if(norm(z[i,j,-1] - z[i,j-1,-1]) < numerical_error) and (norm(z[i,j,-1] - z[i,j+1,-1]) < numerical_error):
-                z[i,j] = z[i,j+1]
-    return z
+# def outliers_rule(z):
+#     numerical_error = 0.01
+#     for i in range(1,len(z)-1):
+#         for j in range(1,len(z[i])-1):
+#             norm = np.linalg.norm
+#             truth1 = norm(z[i,j] - z[i,j-1]) < numerical_error
+#             truth2 = norm(z[i,j] - z[i,j+1]) < numerical_error
+#             if(norm(z[i,j,-1] - z[i,j-1,-1]) < numerical_error) and (norm(z[i,j,-1] - z[i,j+1,-1]) < numerical_error):
+#                 z[i,j] = z[i,j+1]
+#     return z
 
                     
 
-# def outliers_rule(z_array):     # Loop the columns
-#     new_z = z_array.copy()
-#     numerical_error = 0.01
-#     for i in range(len(z_array[0])):
-#         if abs(z_array[1][i][2] - z_array[2][i][2]) < numerical_error and abs(z_array[1][i][2] - z_array[3][i][2])< numerical_error:
-#             new_z[0][i][2] = z_array[2][i][2]
-#             new_z[4][i][2] = z_array[2][i][2]
-#     return new_z
+def outliers_rule(z_array):     # Loop the columns
+    new_z = z_array.copy()
+    numerical_error = 0.01
+    for i in range(len(z_array[0])):
+        if abs(z_array[1][i][2] - z_array[2][i][2]) < numerical_error and abs(z_array[1][i][2] - z_array[3][i][2])< numerical_error:
+            new_z[0][i][2] = z_array[2][i][2]
+            new_z[4][i][2] = z_array[2][i][2]
+    return new_z
 
 """
 Checks each offset with neighbouring points to determine whether to include
@@ -190,6 +190,56 @@ def edge_offset_rule(z_array):
     # return z_array == z_initial
     return z_array
 
+# def offset_rule(z_values):
+#     offset_z = z_values.copy()
+#     length = len(z_values[0])
+#     # points = np.array(tow.tow_points)
+#     # normals = tow.new_normals
+
+#     # Define corner point
+#     offset_z[0,0] = max_z((z_values[0,0],z_values[1,0],z_values[0,1]))
+#     offset_z[0,length-1] = max_z((z_values[0,length-1], z_values[1, length-1], z_values[0, length-2]))
+#     offset_z[4, 0] = max_z((z_values[4, 1], z_values[3, 0], z_values[4, 0]))
+#     offset_z[4, length-1] = max_z((z_values[4, length-1], z_values[3,length-1], z_values[4, length-2]))
+
+#     # Define top edge (without corner points)
+#     for i in range(5):
+#         for j in range(length):
+#             if [i, j] not in [[0, 0], [0, length-1], [4, 0], [4, length-1]]:        # not corner points
+#                 if i == 0:      # top edge
+#                     left_z = z_values[0, j-1]
+#                     right_z = z_values[0, j+1]
+#                     bot_z = z_values[1, j]
+#                     current_z = z_values[i, j]
+#                     offset_z[i,j] = max_z((left_z, right_z, bot_z, current_z))
+
+#                 elif j == 0:        # left edge
+#                     top_z = z_values[i - 1, 0]
+#                     right_z = z_values[i, 1]
+#                     bot_z = z_values[i + 1, 0]
+#                     offset_z[i, j] = max_z((top_z, right_z, bot_z))
+
+#                 elif j == length - 1:  # right edge
+#                     left_z = z_values[i, j - 1]
+#                     top_z = z_values[i - 1, j]
+#                     bot_z = z_values[i + 1, j]
+#                     offset_z[i, j] = max_z((top_z, bot_z, left_z))
+
+#                 elif i == 4:       # bot edge
+#                     left_z = z_values[4, j - 1]
+#                     right_z = z_values[4, j + 1]
+#                     top_z = z_values[3, j]
+#                     current_z = z_values[i, j]
+#                     offset_z[i, j] = max_z((left_z, right_z, top_z, current_z))
+
+#                 else:               # mid points
+#                     top_z = z_values[i-1, j]
+#                     bot_z = z_values[i+1,j]
+#                     left_z = z_values[i,j-1]
+#                     right_z = z_values[i,j+1]
+#                     offset_z[i,j] = max_z((top_z,bot_z,left_z,right_z))
+
+#     return offset_z
 
 """
 Checks the face normals projected up towards the tows

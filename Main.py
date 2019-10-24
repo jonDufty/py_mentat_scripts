@@ -7,15 +7,23 @@ import os
 
 def main():
 
-	plys = load_tows("test_cross.dat")
+	plys = load_tows("test_flat_2.dat")
 	# General variables
 	thick = plys[0].tows[0][0].t
 	width = plys[0].tows[0][0].w
 	'''
 	'''
-	for p in plys:
-		for t in p.tows:
+	for ply in plys:
+		ply_name = "ply" + str(ply.id)
+		p("*store_elements")
+		p(ply_name)
+		p("#")
+
+		for t in ply.tows:
 			create_tow_shell(t)
+			p("*store_elements")
+			p(ply_name)
+			p(t[0].name())
 	
 	assign_geometry(thick)
 
@@ -32,7 +40,7 @@ def main():
 	create_contact_bodies(plys)
 	print(cb_index)
 
-	ctable = edge_contact(cb_index, 0.5)
+	ctable = edge_contact(cb_index, 0.2)
 
 	face_contact(0.01, ctable)
 
@@ -51,7 +59,7 @@ def edge_contact(cb_index, tolerance):
 		cb = " ".join(cb_index[c])
 		p("*ctable_add_replace_entries_body_list")
 		p("%s %s" % (cb, "#"))
-	p("*interact_option retain_gaps:on")
+	p("*interact_option retain_gaps:off")
 	return ctable_name
 
 
@@ -63,7 +71,7 @@ def face_contact(tolerance, ctable):
 	p("*prog_option ctable:contact_type:glue")
 	p("@set($cta_crit_dist_action,all_pairs)")
 	p("*ctable_add_replace_entries_all")
-	p("*interact_option retain_gaps:on")
+	p("*interact_option retain_gaps:off")
 
 
 def assign_geometry(t):
@@ -223,7 +231,12 @@ def create_tow_shell(tow_list):
 	p(tow.name())
 	p("*all_selected")
 
-	# p("*clear_geometry")
+	# Sweep nodes to remove duplicates at batch boundary
+	p("*sweep_nodes")
+	p("*set_sweep_tolerance 0.001")
+	p("*all_selected")
+
+	p("*clear_geometry")
 	p("select_clear")
 	
 

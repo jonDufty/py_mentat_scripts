@@ -114,7 +114,7 @@ class Tow():
         pass
 
     def projection_origins(self, edge_tolerance=0.3):
-        dist = 5 + self._id
+        dist = 3 + self._id
         copy = np.array(self.new_pts)
         offsets = self.new_normals*dist
         origins = np.empty_like(copy)
@@ -122,7 +122,7 @@ class Tow():
             origins[i][:] = copy[i][:] + offsets
 
         # adjust origins to avoid cases
-        origins = self.projection_edge_tolerance(origins, edge_tolerance)
+        # origins = self.projection_edge_tolerance(origins, edge_tolerance)
         
         return origins 
 

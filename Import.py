@@ -28,7 +28,7 @@ def main(plys, geom):
 
     for p in plys:
         # Create new mesh to represent the tows on top
-        top_mesh = Trimesh() 
+        next_mesh = Trimesh() 
         
         # Iterate through each tow
         for t in p.tows:
@@ -47,13 +47,13 @@ def main(plys, geom):
 
             # Merge to new mesh (i.e. "lay down tow")
             t.generate_tow_mesh()
-            base_mesh = base_mesh.__add__(tow_mesh(t))
+            next_mesh = next_mesh.__add__(tow_mesh(t))
             # base_mesh.show()
 
             # Plot points for visuals
 
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
-
+        base_mesh = base_mesh.__add__(next_mesh)
         base_mesh.show()
     
     # top_mesh = top_mesh.__add__(base_mesh.mesh)
@@ -85,7 +85,7 @@ returns: PlyMentat(TowMentat(PointMentat)) classes
 def create_mentat_tows(plys):
     m_plys = []
     tow_idx = 1
-    length = 200
+    length = 100
 
     for p in plys:
         m_tows = []
@@ -161,6 +161,7 @@ def interpolate_tow_points(points, target_length):
         v1s = np.array(b[1:])
         v2s = np.array(b[:-1])
         diff = v2s - v1s
+        lengths = [np.linalg.norm(x) for x in diff]
         length = sum([np.linalg.norm(x) for x in diff]) #Get total length of distances between each point
         
         # Delta dictates how many 'evenly' spaced points the interpolation funciton will output.
@@ -173,7 +174,10 @@ def interpolate_tow_points(points, target_length):
         curve.delta = delta
         evalpts = curve.evalpts     #evalpts is the new list of interpolated points
         new_batch += evalpts        #stich batches back together as created
-    
+    v1s = np.array(new_batch[1:])
+    v2s = np.array(new_batch[:-1])
+    diff = v2s - v1s
+    lengths = [np.linalg.norm(x) for x in diff]
     # Evalpts is of type list, need to return as numpy array
     return np.array(new_batch)
 
