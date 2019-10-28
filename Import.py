@@ -26,7 +26,7 @@ def main(plys, geom):
     # Create a base_mesh to represent currently laid down tows
     base_mesh = Trimesh()
 
-    for p in plys:
+    for p in plys[1:]:
         # Create new mesh to represent the tows on top
         next_mesh = Trimesh() 
         
@@ -37,11 +37,12 @@ def main(plys, geom):
             if len(t.new_pts[0]) == 1:
                 continue
 
-            for i in range(len(t.new_pts)):
+            t.interpolate_tow_points()
+            # for i in range(len(t.new_pts)):
                 # Interpolate between the points, with the target point distance being t.w/2
                 # Where t.w = 3.25 currently.
                 # pass
-                t.new_pts[i] = interpolate_tow_points(t.new_pts[i], t.w/2)
+                # t.new_pts[i] = interpolate_tow_points(t.new_pts[i], t.w/2)
             t.get_new_normals()
 
             # Create mesh, and adjust z offsets
@@ -171,9 +172,9 @@ def interpolate_tow_points(points, target_length):
         # Roughly equal to 1/n_points-1 - (e.g. delta = 0.01 --> 1/100 --> 101 points).
         # Delta must be < 1, so min() statement is too ensure this (bit hacky atm)
         delta = min(target_length/length,0.99) 
-        # delta = 0.9999
         
         # call the interpolate curve function
+
         curve = fit.interpolate_curve(b,order)
         curve.delta = delta
         evalpts = curve.evalpts     #evalpts is the new list of interpolated points

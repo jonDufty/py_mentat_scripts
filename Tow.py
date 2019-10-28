@@ -60,15 +60,6 @@ class Tow():
     def get_inner_normals(self):
         return self.new_normals[1:-2]
     
-    # Calculate total length of the tow section
-    # NOT USED ANYMORE
-    def length(self):
-        l = 0
-        for i in range(len(self.points)-1):
-            dif = self.points[i+1].coord - self.points[i].coord
-            l += np.linalg.norm(dif)
-        return l
-
     # Calculate new normal vectors for interpolated points based on 
     # the points in front and beside. Normals are facing down now
     # Assuming the normal is constant along transverse points
@@ -152,6 +143,59 @@ class Tow():
 
         return origins
 
+    def interpolate_tow_points(self):
+    
+        target_length = self.w/2 #w/4
+        n_pts = len(self.new_pts[2])
+        points = np.copy(self.new_pts)
+        
+        # Batch up for large tows
+        batch = []
+        batch_combine = [[],[],[],[],[]]
+    
+        i = 0
+        batch_sz = 200
+        while(i + batch_sz < n_pts):
+            tmp = points[:,i:i+batch_sz]
+            batch.append(points[:,i:i+batch_sz])
+            i += batch_sz -1
+        batch.append(points[:,i:])
+
+        for b in batch:
+            if len(b) <= 2:     #If only two points - linear interpolation
+                order = 1
+            elif len(b) == 3:   #If 3 poits - quadratic interpolation
+                order = 2
+            else:               # if > 3 pts - cubic interpolation
+                order = 3
+
+            # get length of batch curve. Use middle line as basis
+            v1s = np.array(b[2][1:])
+            v2s = np.array(b[2][:-1])
+            diff = v2s - v1s
+            lengths = [np.linalg.norm(x) for x in diff]
+            length = sum([np.linalg.norm(x) for x in diff]) #Get total length of distances between each point
+        
+            # Delta dictates how many 'evenly' spaced points the interpolation funciton will output.
+            # Roughly equal to 1/n_points-1 - (e.g. delta = 0.01 --> 1/100 --> 101 points).
+            # Delta must be < 1, so min() statement is too ensure this (bit hacky atm)
+            delta = min(target_length/length,0.99) 
+        
+            # call the interpolate curve function
+            for j in range(len(b)):
+                curve = fit.interpolate_curve(b[j].tolist(),order)
+                curve.delta = delta
+                evalpts = curve.evalpts         #evalpts is the new list of interpolated points
+                batch_combine[j] += evalpts     #stich batches back together as created
+        
+        # Recheck new lengths for debugging
+        v1s = np.array(batch_combine[2][1:])
+        v2s = np.array(batch_combine[2][:-1])
+        diff = v2s - v1s
+        lengths = [np.linalg.norm(x) for x in diff]
+        
+        # Evalpts is of type list, need to return as numpy array
+        self.new_pts = np.array(batch_combine)
 
 
 
