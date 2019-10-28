@@ -7,7 +7,7 @@ import os
 
 def main():
 
-	plys = load_tows("test_flat_2.dat")
+	plys = load_tows("test_cross.dat")
 	# General variables
 	thick = plys[0].tows[0][0].t
 	width = plys[0].tows[0][0].w

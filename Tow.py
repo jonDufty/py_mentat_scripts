@@ -19,6 +19,7 @@ class Tow():
         self.new_pts = [[],[],[],[],[]] #Will eventually rename
         self.new_normals = []
         self.next_pts = []
+        self.proj_dist = 5 + self._id*self.t
         self.mesh = None
 
     def _gen_id(self):
@@ -53,6 +54,12 @@ class Tow():
                 newpt = self.new_pts[i][j] - offset
                 self.new_pts[i][j] -= offset
             
+    def get_inner_points(self):
+        return self.new_pts[1:-2][1:-2]
+
+    def get_inner_normals(self):
+        return self.new_normals[1:-2]
+    
     # Calculate total length of the tow section
     # NOT USED ANYMORE
     def length(self):
@@ -109,16 +116,17 @@ class Tow():
 
         self.mesh = mesh
 
-    
-    def adjust_mesh_edges(self, z_array):
-        pass
-
-    def projection_origins(self, edge_tolerance=0.3):
-        dist = 3 + self._id
+    def projection_origins(self, inner=True, edge_tolerance=0.3):
+        dist = 5 + self._id
         copy = np.array(self.new_pts)
         offsets = self.new_normals*dist
-        origins = np.empty_like(copy)
-        for i in range(len(copy)):
+        if inner:
+            origins = np.empty_like(copy[1:-2][1:-2])
+            offsets = offsets[1:-2]
+        else:
+            origins = np.empty_like(copy)
+            
+        for i in range(len(origins)):
             origins[i][:] = copy[i][:] + offsets
 
         # adjust origins to avoid cases

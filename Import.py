@@ -34,9 +34,13 @@ def main(plys, geom):
         for t in p.tows:
             # Add additional points and vector information
             t.ortho_offset(t.w) #Create offsets in transverse directions
+            if len(t.new_pts[0]) == 1:
+                continue
+
             for i in range(len(t.new_pts)):
                 # Interpolate between the points, with the target point distance being t.w/2
                 # Where t.w = 3.25 currently.
+                # pass
                 t.new_pts[i] = interpolate_tow_points(t.new_pts[i], t.w/2)
             t.get_new_normals()
 
@@ -47,13 +51,12 @@ def main(plys, geom):
 
             # Merge to new mesh (i.e. "lay down tow")
             t.generate_tow_mesh()
-            next_mesh = next_mesh.__add__(tow_mesh(t))
+            base_mesh = base_mesh.__add__(tow_mesh(t))
             # base_mesh.show()
 
             # Plot points for visuals
 
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
-        base_mesh = base_mesh.__add__(next_mesh)
         base_mesh.show()
     
     # top_mesh = top_mesh.__add__(base_mesh.mesh)
@@ -168,6 +171,7 @@ def interpolate_tow_points(points, target_length):
         # Roughly equal to 1/n_points-1 - (e.g. delta = 0.01 --> 1/100 --> 101 points).
         # Delta must be < 1, so min() statement is too ensure this (bit hacky atm)
         delta = min(target_length/length,0.99) 
+        # delta = 0.9999
         
         # call the interpolate curve function
         curve = fit.interpolate_curve(b,order)

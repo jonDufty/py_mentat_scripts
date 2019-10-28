@@ -88,34 +88,39 @@ returns:    array mapping z_offset values to tow points
 """
 def project_tow_points(base_mesh, tow):
     tow_normals = tow.new_normals
+    start_mesh = tow_mesh(tow)
+    # tow_z_array = np.zeros((len(tow.new_pts),len(tow.new_pts[0])))
     project_normals = tow_normals * -1
-    tow_z_array = np.zeros_like(tow.new_pts)
-    next_pts = np.zeros_like(tow.new_pts)
-    project_origins = tow.projection_origins()
+    project_origins = tow.projection_origins(inner=False)
+    tow_z_array = np.zeros_like(project_origins)
+    next_pts = np.zeros_like(project_origins)
 
     base_mesh.merge_vertices()
-    for i in range(len(tow.new_pts)):
+    for i in range(len(project_origins)):
         origins = project_origins[i][:]
         locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
         
         if(len(vec_index) == 0):
             return None
         
-        # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=10)
         offsets = tow_normals[vec_index]*tow.t
         new_locations = locations + offsets
         offset_dist = new_locations - tow.new_pts[i][vec_index]
+        error_pts = check_offset_distance(offset_dist, tow.proj_dist)
         tow_z_array[i][vec_index] = offset_dist
 
     adjusted_z_array = outliers_rule(tow_z_array)
     adjusted_z_array = edge_offset_rule(adjusted_z_array)
 
     for i in range(len(adjusted_z_array)):
+        tmp = np.where(adjusted_z_array[i] > tow.t/2)
         adjust_pts = np.where(adjusted_z_array[i] > tow.t/2)[0]
         offsets = tow_normals[adjust_pts]*adjusted_z_array[i][adjust_pts]
         next_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets
         tow.new_pts[i][adjust_pts] = next_pts[i][adjust_pts]
-
+    
+    # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=10)
+    
     return tow_z_array
 
 
@@ -134,7 +139,11 @@ Currently loops thorugh, will find more efficient solution later
 #             if(norm(z[i,j,-1] - z[i,j-1,-1]) < numerical_error) and (norm(z[i,j,-1] - z[i,j+1,-1]) < numerical_error):
 #                 z[i,j] = z[i,j+1]
 #     return z
-
+def check_offset_distance(row, dist):
+    offset_dist_norm = np.array([np.linalg.norm(i) for i in row])
+    error_pts = np.where(offset_dist_norm > dist)
+    row[error_pts] = np.array([0,0,0])
+    return row
                     
 
 def outliers_rule(z_array):     # Loop the columns
@@ -162,8 +171,6 @@ def edge_offset_rule(z_array):
 
     # bottom edge
     z_array[-1][[0,-1]] = z_array[-2][[1,-2]] # corner pts first
-    tmp = z_array[-1][1:-2]
-    tmp = z_array[-2][1:-2]
     z_array[-1][1:-1] = z_array[-2][1:-1] #remaining pts
 
     #side edges
@@ -281,53 +288,3 @@ def subdivide_it(mesh, min_length):
             new_mesh = new_mesh.subdivide()
         return new_mesh
 
-
-"""  
-Most likely will REMOVE this
-"""
-def intersect_ray(coord, ray, vertices):
-    """ 
-    Implementation of Moller-trombore ray
-    intersection algorithm.
-    Inputs: Coord - location of ray
-            Ray - direction vector of ray
-            Vertices - 1x3 array of 3 vertices of triangle
-    """
-    # Find vectors 
-    e1 = vertices[1] - vertices[0]
-    e2 = vertices[2] - vertices[0]
-    t_vec = coord - vertices[0]
-
-    eps = 0.00001
-
-    # Calculate P to determine if ray is parallel to face
-    p = np.cross(ray, e2)
-    det = np.dot(e1, p)
-    inv_det = 1.0/det
-
-    # If parallel then return early
-    if abs(det) < eps:
-        return False
-
-    u = np.dot(t_vec,p)
-    u *= inv_det
-
-    # Check bounds of u
-    if u < 0. or u > 1.:
-        return False
-
-    Q = np.cross(t_vec,e1)
-    v = np.dot(ray,Q)
-    v *= inv_det
-
-    # Check bounds of v
-    if v < 0.:
-        return False
-    elif u + v > 1.:
-        return False
-
-    # Calculate t and scale
-    t = np.dot(e2, Q)
-    t *= inv_det
-
-    return True

@@ -11,7 +11,7 @@ reads in files, line by line and imports vector data
 '''
 def get_tows(geom):
     plys = []
-    tow_width = 6/2
+    tow_width = 6.35/2
     tow_t = 0.15
     z = 0 #temporary until z-off works
 
@@ -40,7 +40,7 @@ def get_tows(geom):
                 if int(row['InBounds'][-2]) is 1:
                     tow.add_point(import_point(row))
             # If no points were added drop the tow to keep indexes in check
-            if len(tow.points) is 0:
+            if len(tow.points) < 2:
                 continue
             ply.add_tow(tow)
 
