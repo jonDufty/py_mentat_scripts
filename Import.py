@@ -25,8 +25,9 @@ def main(plys, geom):
 
     # Create a base_mesh to represent currently laid down tows
     base_mesh = Trimesh()
+    base_mesh_hash_table = np.array([], dtype='int32')
 
-    for p in plys[1:]:
+    for p in plys:
         # Create new mesh to represent the tows on top
         next_mesh = Trimesh() 
         
@@ -51,13 +52,19 @@ def main(plys, geom):
                 project_tow_points(base_mesh, t)
 
             # Merge to new mesh (i.e. "lay down tow")
-            t.generate_tow_mesh()
-            base_mesh = base_mesh.__add__(tow_mesh(t))
+            t_mesh = tow_mesh(t)
+            t_mesh_faces = np.array([t._id]*len(t_mesh.faces), dtype='int32')
+            
+            base_mesh = base_mesh.__add__(t_mesh)
+            base_mesh_hash_table = np.append(base_mesh_hash_table, t_mesh_faces)
             # base_mesh.show()
 
             # Plot points for visuals
 
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
+            bodies = {1,2,5,7}
+        imesh = intersecting_mesh(base_mesh,bodies)
+        imesh.show()
         base_mesh.show()
     
     # top_mesh = top_mesh.__add__(base_mesh.mesh)

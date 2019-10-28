@@ -109,11 +109,12 @@ class Tow():
 
     def projection_origins(self, inner=True, edge_tolerance=0.3):
         dist = 5 + self._id
-        copy = np.array(self.new_pts)
+        copy = np.copy(self.new_pts)
         offsets = self.new_normals*dist
         if inner:
-            origins = np.empty_like(copy[1:-2][1:-2])
-            offsets = offsets[1:-2]
+            copy = copy[1:-1,1:-1]
+            origins = np.empty_like(copy)
+            offsets = offsets[1:-1]
         else:
             origins = np.empty_like(copy)
             
@@ -162,9 +163,9 @@ class Tow():
         batch.append(points[:,i:])
 
         for b in batch:
-            if len(b) <= 2:     #If only two points - linear interpolation
+            if len(b[2]) <= 2:     #If only two points - linear interpolation
                 order = 1
-            elif len(b) == 3:   #If 3 poits - quadratic interpolation
+            elif len(b[2]) == 3:   #If 3 poits - quadratic interpolation
                 order = 2
             else:               # if > 3 pts - cubic interpolation
                 order = 3

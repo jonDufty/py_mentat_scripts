@@ -76,26 +76,94 @@ def tow_mesh(tow):
         else:
             outer_mesh = outer_mesh.__add__(outer_mesh_segment)
             # inner_mesh = inner_mesh.__add__(outer_mesh_segment)
+    outer_mesh.merge_vertices()
 
     return outer_mesh
 
+def detect_tow_drop(tow, base_mesh, hash_table):
+    # Determine if the inner points of the tow intersect (remove edge tolerance)
+    tri_index = partial_project_tow(tow, base_mesh)
+
+    # If no intersections, then the tows are adjacent or not in contact, so edge overlap is ignored
+    if len(tri_index) == 0:
+        return
+
+    # If not, determine which tows it intersects with
+    bodies = identify_tow_bodies(hash_table, tri_index)
+
+    # Create a new tow mesh to compare
+    intersect_mesh = gen_intersecting_mesh(base_mesh, bodies)
+
+    # Check if inner + outerpoints intersect with relevant tows to account for tow drops
+    full_project_tow(tow, base_mesh)
+
 
 """ 
-Projects down from tow points using vectors from FPM data
-onto base mesh using similar method to project up
-returns:    array mapping z_offset values to tow points
-            array mapping base_mesh faces to z_offset array
+Generates mesh of tows that are intersecting with ray offset
 """
-def project_tow_points(base_mesh, tow):
-    tow_normals = tow.new_normals
-    start_mesh = tow_mesh(tow)
-    # tow_z_array = np.zeros((len(tow.new_pts),len(tow.new_pts[0])))
-    project_normals = tow_normals * -1
-    project_origins = tow.projection_origins(inner=False)
-    tow_z_array = np.zeros_like(project_origins)
-    next_pts = np.zeros_like(project_origins)
+def gen_intersecting_mesh(base_mesh, bodies):
+    mesh_copy = base_mesh.copy()
+    mesh_copy.merge_vertices()
+    body_count = mesh_copy.body_count
+    mesh_bodies = mesh_copy.split(only_watertight=False)
 
-    base_mesh.merge_vertices()
+    intersecting = Trimesh()
+    for i in bodies:
+        intersecting = intersecting.__add__(mesh_bodies[i])
+    return intersecting
+
+
+"""  
+Identifies tow bodies intersecting with tow based off tri_index and hash table
+"""
+def identify_tow_bodies(hash_table, tri_index):
+    bodies = hash_table[tri_index]
+    return set(bodies)
+
+
+"""  
+Projects just the inner points (exluding edge points)
+This values are normally disregarded in edge-edge contact
+"""
+def partial_project_tow(base_mesh, tow):
+    tow_normals = tow.new_normals
+    if len(tow.new_pts[0]) > 2:
+        inner = True 
+    else:
+        inner=False
+    
+    project_origins = tow.projection_origins(inner=inner)
+    if len(project_origins) == 0:
+        return None
+    
+    project_normals = tow_normals * -1
+    if inner is True:
+        project_normals = project_normals[1:-1]
+    
+    all_tri_index = []
+
+    # base_mesh.merge_vertices()
+    for i in range(len(project_origins)):
+        origins = project_origins[i][:]
+        locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
+        all_tri_index.append(tri_index)
+
+    return all_tri_index
+
+
+"""  
+Projects all 5 rows of points against the relevant intersecting mesh
+With edge tows removed now, the edge values can be included
+"""
+def full_project_tow(base_mesh, tow):
+    tow_normals = tow.new_normals
+    project_origins = tow.projection_origins(inner=inner)
+    if len(project_origins) == 0:
+        return None
+    
+    project_normals = tow_normals * -1
+    tow_z_array = np.zeros_like(project_origins)
+
     for i in range(len(project_origins)):
         origins = project_origins[i][:]
         locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
@@ -113,11 +181,64 @@ def project_tow_points(base_mesh, tow):
     adjusted_z_array = edge_offset_rule(adjusted_z_array)
 
     for i in range(len(adjusted_z_array)):
+        adjust_pts = np.where(adjusted_z_array[i] > tow.t/2)[0]
+        offsets = tow_normals[adjust_pts]*adjusted_z_array[i][adjust_pts]
+        tow.new_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets
+    
+    # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=10)
+    
+    return tow_z_array
+
+
+""" 
+Projects down from tow points using vectors from FPM data
+onto base mesh using similar method to project up
+returns:    array mapping z_offset values to tow points
+            array mapping base_mesh faces to z_offset array
+"""
+def project_tow_points(base_mesh, tow):
+    tow_normals = tow.new_normals
+    if len(tow.new_pts[0]) > 2:
+        inner = True 
+    else:
+        inner=False
+    project_origins = tow.projection_origins(inner=inner)
+    if len(project_origins) == 0:
+        return None
+    
+    project_normals = tow_normals * -1
+    if inner is True:
+        project_normals = project_normals[1:-1]
+    
+    tow_z_array = np.zeros_like(project_origins)
+    next_pts = np.zeros_like(project_origins)
+
+    # base_mesh.merge_vertices()
+    for i in range(len(project_origins)):
+        origins = project_origins[i][:]
+        locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
+        
+        if(len(vec_index) == 0):
+            return None
+        
+        offsets = tow_normals[vec_index]*tow.t
+        new_locations = locations + offsets
+        offset_dist = new_locations - tow.new_pts[i][vec_index]
+        error_pts = check_offset_distance(offset_dist, tow.proj_dist)
+        tow_z_array[i][vec_index] = offset_dist
+
+    if inner is True:
+        tow_z_array = inner_edge_rule(tow_z_array, np.zeros_like(tow.new_pts))
+
+    adjusted_z_array = outliers_rule(tow_z_array)
+    adjusted_z_array = edge_offset_rule(adjusted_z_array)
+
+    for i in range(len(adjusted_z_array)):
         tmp = np.where(adjusted_z_array[i] > tow.t/2)
         adjust_pts = np.where(adjusted_z_array[i] > tow.t/2)[0]
         offsets = tow_normals[adjust_pts]*adjusted_z_array[i][adjust_pts]
-        next_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets
-        tow.new_pts[i][adjust_pts] = next_pts[i][adjust_pts]
+        # next_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets
+        tow.new_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets
     
     # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=10)
     
@@ -125,20 +246,10 @@ def project_tow_points(base_mesh, tow):
 
 
 """  
-Iterrates through Z array, and if a value does not equal its
-surrounding values, will be equated to surrounding values (to avoid random outliers)
-Currently loops thorugh, will find more efficient solution later
+Sanity check for revolute cases that may project into themselves
+Compares the intersection disatnce with the projection difference and ignores
+if they are too different
 """
-# def outliers_rule(z):
-#     numerical_error = 0.01
-#     for i in range(1,len(z)-1):
-#         for j in range(1,len(z[i])-1):
-#             norm = np.linalg.norm
-#             truth1 = norm(z[i,j] - z[i,j-1]) < numerical_error
-#             truth2 = norm(z[i,j] - z[i,j+1]) < numerical_error
-#             if(norm(z[i,j,-1] - z[i,j-1,-1]) < numerical_error) and (norm(z[i,j,-1] - z[i,j+1,-1]) < numerical_error):
-#                 z[i,j] = z[i,j+1]
-#     return z
 def check_offset_distance(row, dist):
     offset_dist_norm = np.array([np.linalg.norm(i) for i in row])
     error_pts = np.where(offset_dist_norm > dist)
@@ -146,6 +257,11 @@ def check_offset_distance(row, dist):
     return row
                     
 
+"""  
+Iterrates through Z array, and if a value does not equal its
+surrounding values, will be equated to surrounding values (to avoid random outliers)
+Currently loops thorugh, will find more efficient solution later
+"""
 def outliers_rule(z_array):     # Loop the columns
     new_z = z_array.copy()
     numerical_error = 0.01
@@ -154,6 +270,7 @@ def outliers_rule(z_array):     # Loop the columns
             new_z[0][i][2] = z_array[2][i][2]
             new_z[4][i][2] = z_array[2][i][2]
     return new_z
+
 
 """
 Checks each offset with neighbouring points to determine whether to include
@@ -196,6 +313,13 @@ def edge_offset_rule(z_array):
 
     # return z_array == z_initial
     return z_array
+
+def inner_edge_rule(inner_z, empty_z):
+    empty_z[1:-1,1:-1] = inner_z[:,:]
+    empty_z[1:-1,[0,-1]] = inner_z[:,[0,-1]] 
+    empty_z[[0,-1],:] = empty_z[[1,-2],:] 
+    return empty_z
+
 
 # def offset_rule(z_values):
 #     offset_z = z_values.copy()
