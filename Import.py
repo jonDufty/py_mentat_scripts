@@ -36,11 +36,15 @@ def main(plys, geom):
             t.ortho_offset(t.w) #Create offsets in transverse directions
             if len(t.new_pts[0]) == 1:
                 continue
+            
+            print(f"------\n tow {t._id} \n --------")
+            start = time.clock()
 
             # Interpolate between the points, with the target point distance being t.w/2
             # Where t.w = 3.25 currently.
             t.interpolate_tow_points()
             t.get_new_normals()
+            print(f"----- time_interpolat+normals = {time.clock() - start}")
 
             # If no base_mesh exists, skip projection. Otheriwse detect whether to offset
             if not base_mesh.is_empty:

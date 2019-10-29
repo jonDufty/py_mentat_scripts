@@ -1,6 +1,7 @@
 import trimesh
 from trimesh import Trimesh, visual
 import numpy as np
+import time
 
 """ 
 Wrapper class for trimesh with custom functions and bookeeping of global mesh
@@ -82,21 +83,34 @@ def tow_mesh(tow):
 
 def detect_tow_drop(tow, base_mesh, hash_table):
     
+    start = time.clock()
     # Determine if the inner points of the tow intersect (remove edge tolerance)
     tri_index = partial_project_tow(base_mesh, tow)
-
+    nextt = time.clock()
+    print(f"----- time_partial = {nextt-start}")
+    start = nextt
     # If no intersections, then the tows are adjacent or not in contact, so edge overlap is ignored
     if len(tri_index) == 0:
         return
 
     # If not, determine which tows it intersects with
     bodies = identify_tow_bodies(hash_table, tri_index.astype('int32'))
+    print(bodies)
+    nextt = time.clock()
+    print(f"----- time_identify = {nextt-start}")
+    start = nextt
 
     # Create a new tow mesh to compare
     intersect_mesh = gen_intersecting_mesh(base_mesh, bodies)
+    nextt = time.clock()
+    print(f"----- time_meshing = {nextt-start}")
+    start = nextt
 
     # Check if inner + outerpoints intersect with relevant tows to account for tow drops
-    full_project_tow(base_mesh, tow)
+    full_project_tow(intersect_mesh, tow)
+    nextt = time.clock()
+    print(f"----- time_projecting = {nextt-start}")
+    start = nextt
 
 
 """ 
@@ -104,7 +118,7 @@ Generates mesh of tows that are intersecting with ray offset
 """
 def gen_intersecting_mesh(base_mesh, bodies):
     # Create copy of mesh so to not change any face data
-    mesh_copy = base_mesh.copy()
+    mesh_copy = base_mesh
     # Body count should be equivalent to the number of tows - make sure not
     # To merge vertices
     body_count = mesh_copy.body_count
@@ -159,7 +173,9 @@ def partial_project_tow(base_mesh, tow):
     # Itterate through to find intersecting triangles. Other data not necessary
     for i in range(len(project_origins)):
         origins = project_origins[i][:]
-        locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
+        start = time.clock()
+        vec_index, tri_index = base_mesh.ray.intersects_id(origins, project_normals, multiple_hits=False)
+        print(f"----- time_ray = {time.clock() - start}")
         all_tri_index = np.append(all_tri_index,tri_index)
 
     return all_tri_index
@@ -254,8 +270,8 @@ def project_tow_points(base_mesh, tow):
     if inner is True:
         tow_z_array = inner_edge_rule(tow_z_array, np.zeros_like(tow.new_pts))
 
-    adjusted_z_array = outliers_rule(tow_z_array)
-    adjusted_z_array = edge_offset_rule(adjusted_z_array)
+    # adjusted_z_array = outliers_rule(tow_z_array)
+    adjusted_z_array = offset_rule(tow_z_array)
 
     for i in range(len(adjusted_z_array)):
         tmp = np.where(adjusted_z_array[i] > tow.t/2)
@@ -345,58 +361,67 @@ def inner_edge_rule(inner_z, empty_z):
     return empty_z
 
 
-# def offset_rule(z_values):
-#     offset_z = z_values.copy()
-#     length = len(z_values[0])
-#     # points = np.array(tow.tow_points)
-#     # normals = tow.new_normals
+def offset_rule(z_values):
+    offset_z = z_values.copy()
+    length = len(z_values[0])
+    # points = np.array(tow.tow_points)
+    # normals = tow.new_normals
 
-#     # Define corner point
-#     offset_z[0,0] = max_z((z_values[0,0],z_values[1,0],z_values[0,1]))
-#     offset_z[0,length-1] = max_z((z_values[0,length-1], z_values[1, length-1], z_values[0, length-2]))
-#     offset_z[4, 0] = max_z((z_values[4, 1], z_values[3, 0], z_values[4, 0]))
-#     offset_z[4, length-1] = max_z((z_values[4, length-1], z_values[3,length-1], z_values[4, length-2]))
+    # Define corner point
+    offset_z[0,0] = max_z((z_values[0,0],z_values[1,0],z_values[0,1]))
+    offset_z[0,length-1] = max_z((z_values[0,length-1], z_values[1, length-1], z_values[0, length-2]))
+    offset_z[4, 0] = max_z((z_values[4, 1], z_values[3, 0], z_values[4, 0]))
+    offset_z[4, length-1] = max_z((z_values[4, length-1], z_values[3,length-1], z_values[4, length-2]))
 
-#     # Define top edge (without corner points)
-#     for i in range(5):
-#         for j in range(length):
-#             if [i, j] not in [[0, 0], [0, length-1], [4, 0], [4, length-1]]:        # not corner points
-#                 if i == 0:      # top edge
-#                     left_z = z_values[0, j-1]
-#                     right_z = z_values[0, j+1]
-#                     bot_z = z_values[1, j]
-#                     current_z = z_values[i, j]
-#                     offset_z[i,j] = max_z((left_z, right_z, bot_z, current_z))
+    # Define top edge (without corner points)
+    for i in range(5):
+        for j in range(length):
+            if [i, j] not in [[0, 0], [0, length-1], [4, 0], [4, length-1]]:        # not corner points
+                if i == 0:      # top edge
+                    left_z = z_values[0, j-1]
+                    right_z = z_values[0, j+1]
+                    bot_z = z_values[1, j]
+                    current_z = z_values[i, j]
+                    offset_z[i,j] = max_z((left_z, right_z, bot_z, current_z))
 
-#                 elif j == 0:        # left edge
-#                     top_z = z_values[i - 1, 0]
-#                     right_z = z_values[i, 1]
-#                     bot_z = z_values[i + 1, 0]
-#                     offset_z[i, j] = max_z((top_z, right_z, bot_z))
+                elif j == 0:        # left edge
+                    top_z = z_values[i - 1, 0]
+                    right_z = z_values[i, 1]
+                    bot_z = z_values[i + 1, 0]
+                    offset_z[i, j] = max_z((top_z, right_z, bot_z))
 
-#                 elif j == length - 1:  # right edge
-#                     left_z = z_values[i, j - 1]
-#                     top_z = z_values[i - 1, j]
-#                     bot_z = z_values[i + 1, j]
-#                     offset_z[i, j] = max_z((top_z, bot_z, left_z))
+                elif j == length - 1:  # right edge
+                    left_z = z_values[i, j - 1]
+                    top_z = z_values[i - 1, j]
+                    bot_z = z_values[i + 1, j]
+                    offset_z[i, j] = max_z((top_z, bot_z, left_z))
 
-#                 elif i == 4:       # bot edge
-#                     left_z = z_values[4, j - 1]
-#                     right_z = z_values[4, j + 1]
-#                     top_z = z_values[3, j]
-#                     current_z = z_values[i, j]
-#                     offset_z[i, j] = max_z((left_z, right_z, top_z, current_z))
+                elif i == 4:       # bot edge
+                    left_z = z_values[4, j - 1]
+                    right_z = z_values[4, j + 1]
+                    top_z = z_values[3, j]
+                    current_z = z_values[i, j]
+                    offset_z[i, j] = max_z((left_z, right_z, top_z, current_z))
 
-#                 else:               # mid points
-#                     top_z = z_values[i-1, j]
-#                     bot_z = z_values[i+1,j]
-#                     left_z = z_values[i,j-1]
-#                     right_z = z_values[i,j+1]
-#                     offset_z[i,j] = max_z((top_z,bot_z,left_z,right_z))
+                else:               # mid points
+                    top_z = z_values[i-1, j]
+                    bot_z = z_values[i+1,j]
+                    left_z = z_values[i,j-1]
+                    right_z = z_values[i,j+1]
+                    offset_z[i,j] = max_z((top_z,bot_z,left_z,right_z))
 
-#     return offset_z
+    return offset_z
 
-            
+
+def max_z(vector_lists):
+    magnitude = []
+    for i, j in enumerate(vector_lists):
+        magnitude.append(np.linalg.norm(j))
+    max_value = max(magnitude)
+    index = magnitude.index(max_value)
+
+    return vector_lists[index]
+
 """  
 Finds index's of faces adjacent to $face
 Possible REMOVE

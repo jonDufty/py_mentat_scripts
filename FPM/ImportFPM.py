@@ -11,7 +11,7 @@ reads in files, line by line and imports vector data
 '''
 def get_tows(geom):
     plys = []
-    tow_width = 6/2
+    tow_width = 6.5/2
     tow_t = 1
     z = 0 #temporary until z-off works
 
