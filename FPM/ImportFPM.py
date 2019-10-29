@@ -11,8 +11,8 @@ reads in files, line by line and imports vector data
 '''
 def get_tows(geom):
     plys = []
-    tow_width = 6.35/2
-    tow_t = 0.15
+    tow_width = 6/2
+    tow_t = 1
     z = 0 #temporary until z-off works
 
     ply_dir = "/".join(["FPM",geom])
@@ -41,6 +41,7 @@ def get_tows(geom):
                     tow.add_point(import_point(row))
             # If no points were added drop the tow to keep indexes in check
             if len(tow.points) < 2:
+                Tow._dec_id()
                 continue
             ply.add_tow(tow)
 

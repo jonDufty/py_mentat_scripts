@@ -82,20 +82,20 @@ def tow_mesh(tow):
 
 def detect_tow_drop(tow, base_mesh, hash_table):
     # Determine if the inner points of the tow intersect (remove edge tolerance)
-    tri_index = partial_project_tow(tow, base_mesh)
+    tri_index = partial_project_tow(base_mesh, tow)
 
     # If no intersections, then the tows are adjacent or not in contact, so edge overlap is ignored
     if len(tri_index) == 0:
         return
 
     # If not, determine which tows it intersects with
-    bodies = identify_tow_bodies(hash_table, tri_index)
+    bodies = identify_tow_bodies(hash_table, tri_index.astype('int32'))
 
     # Create a new tow mesh to compare
     intersect_mesh = gen_intersecting_mesh(base_mesh, bodies)
 
     # Check if inner + outerpoints intersect with relevant tows to account for tow drops
-    full_project_tow(tow, base_mesh)
+    full_project_tow(base_mesh, tow)
 
 
 """ 
@@ -103,13 +103,13 @@ Generates mesh of tows that are intersecting with ray offset
 """
 def gen_intersecting_mesh(base_mesh, bodies):
     mesh_copy = base_mesh.copy()
-    mesh_copy.merge_vertices()
     body_count = mesh_copy.body_count
     mesh_bodies = mesh_copy.split(only_watertight=False)
 
     intersecting = Trimesh()
     for i in bodies:
-        intersecting = intersecting.__add__(mesh_bodies[i])
+        intersecting = intersecting.__add__(mesh_bodies[i-1])
+    # intersecting.show()
     return intersecting
 
 
@@ -140,13 +140,13 @@ def partial_project_tow(base_mesh, tow):
     if inner is True:
         project_normals = project_normals[1:-1]
     
-    all_tri_index = []
+    all_tri_index = np.array([], dtype='int32')
 
     # base_mesh.merge_vertices()
     for i in range(len(project_origins)):
         origins = project_origins[i][:]
         locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
-        all_tri_index.append(tri_index)
+        all_tri_index = np.append(all_tri_index,tri_index)
 
     return all_tri_index
 
@@ -157,7 +157,7 @@ With edge tows removed now, the edge values can be included
 """
 def full_project_tow(base_mesh, tow):
     tow_normals = tow.new_normals
-    project_origins = tow.projection_origins(inner=inner)
+    project_origins = tow.projection_origins(inner=False)
     if len(project_origins) == 0:
         return None
     
@@ -178,12 +178,14 @@ def full_project_tow(base_mesh, tow):
         tow_z_array[i][vec_index] = offset_dist
 
     adjusted_z_array = outliers_rule(tow_z_array)
-    adjusted_z_array = edge_offset_rule(adjusted_z_array)
+    # adjusted_z_array = edge_offset_rule(adjusted_z_array)
 
     for i in range(len(adjusted_z_array)):
+        adjusted_off_dist = np.linalg.norm(adjusted_z_array[i], axis=1)
         adjust_pts = np.where(adjusted_z_array[i] > tow.t/2)[0]
-        offsets = tow_normals[adjust_pts]*adjusted_z_array[i][adjust_pts]
+        offsets = adjusted_z_array[i][adjust_pts]
         tow.new_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets
+
     
     # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=10)
     

@@ -49,7 +49,8 @@ def main(plys, geom):
             # Create mesh, and adjust z offsets
 
             if not base_mesh.is_empty:
-                project_tow_points(base_mesh, t)
+                detect_tow_drop(t,base_mesh,base_mesh_hash_table)
+                # project_tow_points(base_mesh, t)
 
             # Merge to new mesh (i.e. "lay down tow")
             t_mesh = tow_mesh(t)
@@ -63,8 +64,6 @@ def main(plys, geom):
 
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
             bodies = {1,2,5,7}
-        imesh = intersecting_mesh(base_mesh,bodies)
-        imesh.show()
         base_mesh.show()
     
     # top_mesh = top_mesh.__add__(base_mesh.mesh)

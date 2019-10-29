@@ -22,9 +22,15 @@ class Tow():
         self.proj_dist = 5 + self._id*self.t
         self.mesh = None
 
+    def __repr__(self):
+        return repr("tow" + str(self._id))
+
     def _gen_id(self):
         Tow.t_id += 1
         return Tow.t_id
+
+    def _dec_id():
+        Tow.t_id -= 1
 
     # Add point to tow
     def add_point(self, pt):
