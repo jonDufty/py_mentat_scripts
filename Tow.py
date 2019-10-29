@@ -113,6 +113,8 @@ class Tow():
 
         self.mesh = mesh
 
+    # Create origins well above base mesh to avoid intersections
+    # Inner --> determine whether to return only inner points or all points
     def projection_origins(self, inner=True, edge_tolerance=0.3):
         dist = 5 + self._id
         copy = np.copy(self.new_pts)
@@ -127,9 +129,6 @@ class Tow():
         for i in range(len(origins)):
             origins[i][:] = copy[i][:] + offsets
 
-        # adjust origins to avoid cases
-        # origins = self.projection_edge_tolerance(origins, edge_tolerance)
-        
         return origins 
 
     
@@ -150,13 +149,19 @@ class Tow():
 
         return origins
 
+    
+    """  
+    Interpolate longitudinally along tow. Makes points as close to evenly spaced
+    as possible.
+    Target length is 0.25*tow_width
+    """
     def interpolate_tow_points(self):
     
         target_length = self.w/2 #w/4
         n_pts = len(self.new_pts[2])
         points = np.copy(self.new_pts)
         
-        # Batch up for large tows
+        # Batch up sections for large tows
         batch = []
         batch_combine = [[],[],[],[],[]]
     
@@ -169,14 +174,14 @@ class Tow():
         batch.append(points[:,i:])
 
         for b in batch:
-            if len(b[2]) <= 2:     #If only two points - linear interpolation
+            if len(b[2]) <= 2:      # If only two points - linear interpolation
                 order = 1
-            elif len(b[2]) == 3:   #If 3 poits - quadratic interpolation
+            elif len(b[2]) == 3:    # If 3 poits - quadratic interpolation
                 order = 2
-            else:               # if > 3 pts - cubic interpolation
+            else:                   # if > 3 pts - cubic interpolation
                 order = 3
 
-            # get length of batch curve. Use middle line as basis
+            # Get length of batch curve. Use middle line as basis
             v1s = np.array(b[2][1:])
             v2s = np.array(b[2][:-1])
             diff = v2s - v1s

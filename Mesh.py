@@ -81,6 +81,7 @@ def tow_mesh(tow):
     return outer_mesh
 
 def detect_tow_drop(tow, base_mesh, hash_table):
+    
     # Determine if the inner points of the tow intersect (remove edge tolerance)
     tri_index = partial_project_tow(base_mesh, tow)
 
@@ -102,19 +103,27 @@ def detect_tow_drop(tow, base_mesh, hash_table):
 Generates mesh of tows that are intersecting with ray offset
 """
 def gen_intersecting_mesh(base_mesh, bodies):
+    # Create copy of mesh so to not change any face data
     mesh_copy = base_mesh.copy()
+    # Body count should be equivalent to the number of tows - make sure not
+    # To merge vertices
     body_count = mesh_copy.body_count
+    # Split mesh modies into individual tow meshes
     mesh_bodies = mesh_copy.split(only_watertight=False)
 
+    # Based on interesting bodies, create new mesh with only those bodies
     intersecting = Trimesh()
     for i in bodies:
         intersecting = intersecting.__add__(mesh_bodies[i-1])
+    
     # intersecting.show()
     return intersecting
 
 
 """  
-Identifies tow bodies intersecting with tow based off tri_index and hash table
+Identifies tow bodies intersecting with tow based off tri_index and hash table.
+Hash table used for constant time lookup.
+Return as a set to remove duplicates
 """
 def identify_tow_bodies(hash_table, tri_index):
     bodies = hash_table[tri_index]
@@ -127,22 +136,27 @@ This values are normally disregarded in edge-edge contact
 """
 def partial_project_tow(base_mesh, tow):
     tow_normals = tow.new_normals
+    # Check whether the tow data is large enough to contain "inner pts"
     if len(tow.new_pts[0]) > 2:
         inner = True 
     else:
         inner=False
     
+    # Create tow points above the surface to project 'down'
+    # Inner = True --> Inner rows only, False --> All points
     project_origins = tow.projection_origins(inner=inner)
     if len(project_origins) == 0:
         return None
     
+    # Adjust normal array to match project_origins
     project_normals = tow_normals * -1
     if inner is True:
         project_normals = project_normals[1:-1]
     
+    # Cumulative index of triangles with ray intersectinos. Duplicates allowed
     all_tri_index = np.array([], dtype='int32')
 
-    # base_mesh.merge_vertices()
+    # Itterate through to find intersecting triangles. Other data not necessary
     for i in range(len(project_origins)):
         origins = project_origins[i][:]
         locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
@@ -157,11 +171,15 @@ With edge tows removed now, the edge values can be included
 """
 def full_project_tow(base_mesh, tow):
     tow_normals = tow.new_normals
+    
+    # Generate tow points above to project down. Inner=Fallse --> all points returned
     project_origins = tow.projection_origins(inner=False)
     if len(project_origins) == 0:
         return None
     
     project_normals = tow_normals * -1
+    
+    # Create array to track offsets of each tow point
     tow_z_array = np.zeros_like(project_origins)
 
     for i in range(len(project_origins)):
@@ -172,19 +190,23 @@ def full_project_tow(base_mesh, tow):
             return None
         
         offsets = tow_normals[vec_index]*tow.t
-        new_locations = locations + offsets
-        offset_dist = new_locations - tow.new_pts[i][vec_index]
+        new_locations = locations + offsets         #location of pts after offset
+        offset_dist = new_locations - tow.new_pts[i][vec_index]     # Overall distance to offset from starting pt
+        
+        # Check offset distance against distance it was projected to check for 
+        # outlier intersections (i.e a cylinder projecting against its inner surface)
         error_pts = check_offset_distance(offset_dist, tow.proj_dist)
         tow_z_array[i][vec_index] = offset_dist
 
+    # Adjust the z array for any transverse outliers
     adjusted_z_array = outliers_rule(tow_z_array)
     # adjusted_z_array = edge_offset_rule(adjusted_z_array)
 
     for i in range(len(adjusted_z_array)):
-        adjusted_off_dist = np.linalg.norm(adjusted_z_array[i], axis=1)
-        adjust_pts = np.where(adjusted_z_array[i] > tow.t/2)[0]
-        offsets = adjusted_z_array[i][adjust_pts]
-        tow.new_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets
+        adjusted_off_dist = np.linalg.norm(adjusted_z_array[i], axis=1)     #distance of offsets
+        adjust_pts = np.where(adjusted_z_array[i] > tow.t/2)[0]             #Only adjust pts with non-zero offset
+        offsets = adjusted_z_array[i][adjust_pts]   
+        tow.new_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets   #Update tow data with offsets
 
     
     # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=10)
@@ -374,21 +396,6 @@ def inner_edge_rule(inner_z, empty_z):
 
 #     return offset_z
 
-"""
-Checks the face normals projected up towards the tows
-Utilises trimesh intersects_location ray tracing. Only detects first hit
-returns: List of indexes for base_mesh faces that lie beneath tow
-"""
-def project_up(base_mesh, tow_mesh):
-
-    mesh = base_mesh.mesh
-    base_vectors = mesh.face_normals        #ray vectors
-    base_origins = mesh.triangles_center    #ray origins - centroids of mesh faces
-    locations, vec_index, tri_index = tow_mesh.ray.intersects_location(base_origins, base_vectors, multiple_hits=False)
-
-    # Increment the z-offset value if the faces lie underneath a tow, this is refined later
-    base_mesh.inc_z_off(vec_index)
-    return vec_index
             
 """  
 Finds index's of faces adjacent to $face

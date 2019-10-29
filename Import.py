@@ -28,49 +28,42 @@ def main(plys, geom):
     base_mesh_hash_table = np.array([], dtype='int32')
 
     for p in plys:
-        # Create new mesh to represent the tows on top
-        next_mesh = Trimesh() 
         
         # Iterate through each tow
         for t in p.tows:
+            
             # Add additional points and vector information
             t.ortho_offset(t.w) #Create offsets in transverse directions
             if len(t.new_pts[0]) == 1:
                 continue
 
+            # Interpolate between the points, with the target point distance being t.w/2
+            # Where t.w = 3.25 currently.
             t.interpolate_tow_points()
-            # for i in range(len(t.new_pts)):
-                # Interpolate between the points, with the target point distance being t.w/2
-                # Where t.w = 3.25 currently.
-                # pass
-                # t.new_pts[i] = interpolate_tow_points(t.new_pts[i], t.w/2)
             t.get_new_normals()
 
-            # Create mesh, and adjust z offsets
-
+            # If no base_mesh exists, skip projection. Otheriwse detect whether to offset
             if not base_mesh.is_empty:
                 detect_tow_drop(t,base_mesh,base_mesh_hash_table)
-                # project_tow_points(base_mesh, t)
 
-            # Merge to new mesh (i.e. "lay down tow")
+            # Mesh tow with offset data
             t_mesh = tow_mesh(t)
             t_mesh_faces = np.array([t._id]*len(t_mesh.faces), dtype='int32')
             
+            # Add tow to base mesh (i.e. lay down tow). Update hash table
             base_mesh = base_mesh.__add__(t_mesh)
             base_mesh_hash_table = np.append(base_mesh_hash_table, t_mesh_faces)
-            # base_mesh.show()
 
             # Plot points for visuals
-
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
-            bodies = {1,2,5,7}
+
         base_mesh.show()
     
-    # top_mesh = top_mesh.__add__(base_mesh.mesh)
-    
+    # Plot surfaces for debugging
     plt.figure(fig.number)
     plt.show()
-        
+    
+    # Export tow data to be compatible with Marc, so no package dependencies
     m_plys = create_mentat_tows(plys)
     
     return m_plys
