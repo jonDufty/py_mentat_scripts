@@ -17,7 +17,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/Import.py",
             "console": "integratedTerminal",
-            "args": ["test_flat"],
+            "args": ["test_cylinder"],
             "showReturnValue": true,
             "stopOnEntry": false,
         },

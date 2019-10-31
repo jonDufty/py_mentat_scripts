@@ -149,6 +149,7 @@ Projects just the inner points (exluding edge points)
 This values are normally disregarded in edge-edge contact
 """
 def partial_project_tow(base_mesh, tow):
+    
     tow_normals = tow.new_normals
     # Check whether the tow data is large enough to contain "inner pts"
     if len(tow.new_pts[0]) > 2:
@@ -174,7 +175,7 @@ def partial_project_tow(base_mesh, tow):
     for i in range(len(project_origins)):
         origins = project_origins[i][:]
         start = time.clock()
-        vec_index, tri_index = base_mesh.ray.intersects_id(origins, project_normals, multiple_hits=False)
+        tri_index, vec_index = base_mesh.ray.intersects_id(origins, project_normals, multiple_hits=False)
         print(f"----- time_ray = {time.clock() - start}")
         all_tri_index = np.append(all_tri_index,tri_index)
 
@@ -186,6 +187,7 @@ Projects all 5 rows of points against the relevant intersecting mesh
 With edge tows removed now, the edge values can be included
 """
 def full_project_tow(base_mesh, tow):
+
     tow_normals = tow.new_normals
     
     # Generate tow points above to project down. Inner=Fallse --> all points returned
@@ -206,8 +208,12 @@ def full_project_tow(base_mesh, tow):
             return None
         
         offsets = tow_normals[vec_index]*tow.t
+        # np.linalg.norm(offsets, axis=1)
         new_locations = locations + offsets         #location of pts after offset
+        # np.linalg.norm(new_locations - locations, axis=1)
+        # np.linalg.norm(locations - tow.new_pts[i][vec_index], axis=1)
         offset_dist = new_locations - tow.new_pts[i][vec_index]     # Overall distance to offset from starting pt
+        # np.linalg.norm(offset_dist, axis=1)
         
         # Check offset distance against distance it was projected to check for 
         # outlier intersections (i.e a cylinder projecting against its inner surface)
@@ -216,19 +222,36 @@ def full_project_tow(base_mesh, tow):
 
     # Adjust the z array for any transverse outliers
     adjusted_z_array = outliers_rule(tow_z_array)
-    # adjusted_z_array = edge_offset_rule(adjusted_z_array)
+    adjusted_z_array = edge_offset_rule(adjusted_z_array)
 
     for i in range(len(adjusted_z_array)):
         adjusted_off_dist = np.linalg.norm(adjusted_z_array[i], axis=1)     #distance of offsets
-        adjust_pts = np.where(adjusted_z_array[i] > tow.t/2)[0]             #Only adjust pts with non-zero offset
-        offsets = adjusted_z_array[i][adjust_pts]   
+        adjust_pts = np.where(adjusted_off_dist > tow.t/2)[0]             #Only adjust pts with non-zero offset
+        offsets = adjusted_z_array[i][adjust_pts]
+        np.linalg.norm(offsets, axis=1)   
         tow.new_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets   #Update tow data with offsets
 
-    
-    # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=10)
+    # tow_mesh(tow).show()
+    # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins, vector_normals=project_normals, scale=150)
     
     return tow_z_array
 
+
+def batch_project_tow(tow, base_mesh, batch_size = 50):
+    n_points = len(tow.new_pts[0])
+    i = 700
+    origins = tow.projection_origins(inner=False)
+    normals = tow.new_normals*-1
+    while (i + batch_size < n_points):
+        mesh_copy = base_mesh.copy()
+        proj_origins = origins[:,i:i+batch_size]
+        proj_normals = normals[i:i+batch_size]
+        for j in range(len(proj_origins)):
+            Mesh(base_mesh).visualize_mesh([],vector_origins=proj_origins[j], vector_normals=proj_normals, scale=50)
+            locations, vec_index, tri_index = mesh_copy.ray.intersects_location(proj_origins[j], proj_normals, multiple_hits=False)
+        i += batch_size
+    return
+    
 
 """ 
 Projects down from tow points using vectors from FPM data

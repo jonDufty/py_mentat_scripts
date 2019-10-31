@@ -42,7 +42,11 @@ def main(plys, geom):
 
             # Interpolate between the points, with the target point distance being t.w/2
             # Where t.w = 3.25 currently.
-            t.interpolate_tow_points()
+            if len(t.new_pts[0]) < 1000:
+                t.interpolate_tow_points()
+            else:
+                t.new_pts = np.array(t.new_pts)
+
             t.get_new_normals()
             print(f"----- time_interpolat+normals = {time.clock() - start}")
 
@@ -178,7 +182,7 @@ def interpolate_tow_points(points, target_length):
         
         # call the interpolate curve function
 
-        curve = fit.interpolate_curve(b,order)
+        # curve = fit.interpolate_curve(b,order)
         curve.delta = delta
         evalpts = curve.evalpts     #evalpts is the new list of interpolated points
         new_batch += evalpts        #stich batches back together as created

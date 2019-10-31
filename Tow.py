@@ -209,6 +209,13 @@ class Tow():
         # Evalpts is of type list, need to return as numpy array
         self.new_pts = np.array(batch_combine)
 
+    def batch_tow(self, batch_size = 200):
+        n_points = len(self.new_normals)
+        i = 0
+        tows = []
+        while(i+batch_size < n_points):
+            pts = self.new_pts[:,i:i+batch_size]
+
 
 
 

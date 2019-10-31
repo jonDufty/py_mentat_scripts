@@ -7,7 +7,7 @@ import os
 
 def main():
 
-	plys = load_tows("test_cross.dat")
+	plys = load_tows("test_cylinder_tst.dat")
 	# General variables
 	thick = plys[0].tows[0][0].t
 	width = plys[0].tows[0][0].w
@@ -19,11 +19,14 @@ def main():
 		p(ply_name)
 		p("#")
 
-		for t in ply.tows:
+		for t in ply.tows[0:20]:
 			create_tow_shell(t)
 			p("*store_elements")
 			p(ply_name)
 			p(t[0].name())
+
+
+	# save_file("marc_surface\\test")
 	
 	assign_geometry(thick)
 
@@ -144,6 +147,9 @@ def load_tows(file):
 		ply = pickle.load(f)
 	return ply
 
+def save_file(file):
+	p('*set_save_formatted off *save_as_model "%s.mud" yes' % file)
+
 
 def generate_points(point):
     p(point.send_coord())
@@ -153,8 +159,11 @@ def generate_curve(pts):
 	
 	ni = int(py_get_float("npoints()"))
 	p("*add_points")
-	for i in pts:
-		generate_points(i)
+	# for i in pts:
+	# 	generate_points(i)
+	pts = [i.send_coord() for i in pts]
+	pts = " ".join(pts)
+	p(pts)
 	nf = int(py_get_float("npoints()"))
 	pt_to_add = [str(i) for i in list(range(ni+1,nf+1))]
 	pt_to_add = " ".join(pt_to_add)
