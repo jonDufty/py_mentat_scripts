@@ -12,7 +12,7 @@ reads in files, line by line and imports vector data
 def get_tows(geom):
     plys = []
     tow_width = 6.35/2
-    tow_t = 0.2
+    tow_t = 1
     z = 0 #temporary until z-off works
 
     ply_dir = "/".join(["FPM",geom])
@@ -25,7 +25,7 @@ def get_tows(geom):
 
         # Iterate through every tow pt file in directory and create new tow
         for f in os.listdir(dir):
-            tow = Tow(tow_width,tow_t, z_off=z, ply=d)
+            tow = Tow(tow_width,tow_t, ply._id)
             file = "".join([dir,"/",f])
             skip = start_line(file)
             if skip < 0:

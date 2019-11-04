@@ -1,0 +1,10 @@
+style=1
+information summary of job:  cyl_cone_job1
+version:  Marc 2018.1.0 GA
+date:     Tue Oct 01 18:16:10 2019
+
+    case   inc  cycl  sepa cut   cycl   separ   cut  rmesh time step   total time        displ-mag              
+      #     #     #     #   #      #      #      #     #      of           of         min         max    
+               |--of the inc--|------of the analysis------| the inc      the job
+
+      0      0    0    0    0       0       0     0     0  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00

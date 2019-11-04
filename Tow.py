@@ -10,7 +10,7 @@ from geomdl import fitting as fit
 class Tow():
     t_id = 0
 
-    def __init__(self, tow_w, tow_t, z_off=0, ply=None):
+    def __init__(self, tow_w, tow_t, pid):
         self._id = self._gen_id()
         self.points = []
         self.w = tow_w
@@ -19,8 +19,9 @@ class Tow():
         self.new_pts = [[],[],[],[],[]] #Will eventually rename
         self.new_normals = []
         self.next_pts = []
-        self.proj_dist = 5 + self._id*self.t
         self.mesh = None
+        self.pid = pid
+        self.proj_dist = 5*pid
 
     def __repr__(self):
         return repr("tow" + str(self._id))
@@ -70,23 +71,33 @@ class Tow():
     # the points in front and beside. Normals are facing down now
     # Assuming the normal is constant along transverse points
     def get_new_normals(self):
-        normals = []
-        vecs = self.new_pts[2]      #Centre points
-        right = self.new_pts[1]     #Points to the right of centre 
-        
-        for i in range(len(vecs)-1):
-            v1 = self.normalize(vecs[i+1] - vecs[i])    #Orientation vector
-            v2 = self.normalize(right[i] - vecs[i])     #Transverse vector
-            normals.append(np.cross(v1,v2).tolist())    #Generate normal vector as list (not numpy yet)
-        
-        # Append final points
-        v1 = self.normalize(right[-1]-vecs[-1])
-        v2 = self.normalize(vecs[-1]-vecs[-2])
-        normals.append(np.cross(v2,v1).tolist())
+        normals = [[],[],[],[],[]]
+        for i in range(len(self.new_pts)-1):
+            vecs = self.new_pts[i]      #current row
+            right = self.new_pts[i+1]   #next row
+            for j in range(len(vecs) -1):
+                v1 = self.normalize(vecs[j+1] - vecs[j])    #Orientation vector
+                v2 = self.normalize(right[j] - vecs[j])     #Transverse vector
+                normals[i].append(np.cross(v2,v1).tolist()) #Normal vector as list(not np)
+            #Append Final point
+            v1 = self.normalize(vecs[-1] - vecs[-2])
+            v2 = self.normalize(right[-1] - vecs[-1])
+            normals[i].append(np.cross(v2,v1).tolist())
 
-        # Now convert into np array so that the form is nparray(n,3) instead of nested array
+        # Append final row
+        vecs = self.new_pts[-1]
+        left = self.new_pts[-2]
+        for j in range(len(vecs) -1):
+            v1 = self.normalize(vecs[j+1] - vecs[j])
+            v2 = self.normalize(vecs[j] - left[j])
+            normals[-1].append(np.cross(v2,v1).tolist())
+        # Append final point
+        v1 = self.normalize(vecs[-1] - vecs[-2])
+        v2 = self.normalize(vecs[-1] - left[-1])
+        normals[-1].append(np.cross(v2, v1).tolist())
         self.new_normals = np.array(normals)
-        return np.array(normals)
+        return
+
 
     # Convert into unit vector
     def normalize(self,v):
@@ -115,22 +126,11 @@ class Tow():
 
     # Create origins well above base mesh to avoid intersections
     # Inner --> determine whether to return only inner points or all points
-    def projection_origins(self, inner=True, edge_tolerance=0.3):
-        dist = 5 + self._id
-        copy = np.copy(self.new_pts)
-        offsets = self.new_normals*dist
-        if inner:
-            copy = copy[1:-1,1:-1]
-            origins = np.empty_like(copy)
-            offsets = offsets[1:-1]
-        else:
-            origins = np.empty_like(copy)
-            
-        for i in range(len(origins)):
-            origins[i][:] = copy[i][:] + offsets
+    def projection_origins(self):
+        normals = self.new_normals
+        offset_dist = normals * self.proj_dist
 
-        return origins 
-
+        return self.new_pts + offset_dist
     
     """ 
     Adjust outside points to miss edge contacts within tolerance

@@ -2,6 +2,7 @@ import trimesh
 from trimesh import Trimesh, visual
 import numpy as np
 import time
+import os
 
 """ 
 Wrapper class for trimesh with custom functions and bookeeping of global mesh
@@ -83,12 +84,9 @@ def tow_mesh(tow):
 
 def detect_tow_drop(tow, base_mesh, hash_table):
     
-    start = time.clock()
     # Determine if the inner points of the tow intersect (remove edge tolerance)
     tri_index = partial_project_tow(base_mesh, tow)
-    nextt = time.clock()
-    print(f"----- time_partial = {nextt-start}")
-    start = nextt
+    
     # If no intersections, then the tows are adjacent or not in contact, so edge overlap is ignored
     if len(tri_index) == 0:
         return
@@ -96,21 +94,12 @@ def detect_tow_drop(tow, base_mesh, hash_table):
     # If not, determine which tows it intersects with
     bodies = identify_tow_bodies(hash_table, tri_index.astype('int32'))
     print(bodies)
-    nextt = time.clock()
-    print(f"----- time_identify = {nextt-start}")
-    start = nextt
 
     # Create a new tow mesh to compare
     intersect_mesh = gen_intersecting_mesh(base_mesh, bodies)
-    nextt = time.clock()
-    print(f"----- time_meshing = {nextt-start}")
-    start = nextt
 
     # Check if inner + outerpoints intersect with relevant tows to account for tow drops
     full_project_tow(intersect_mesh, tow)
-    nextt = time.clock()
-    print(f"----- time_projecting = {nextt-start}")
-    start = nextt
 
 
 """ 
@@ -128,7 +117,10 @@ def gen_intersecting_mesh(base_mesh, bodies):
     # Based on interesting bodies, create new mesh with only those bodies
     intersecting = Trimesh()
     for i in bodies:
-        intersecting = intersecting.__add__(mesh_bodies[i-1])
+        if intersecting.is_empty:
+            intersecting = mesh_bodies[i-1]
+        else:
+            intersecting = intersecting.__add__(mesh_bodies[i-1])
     
     # intersecting.show()
     return intersecting
@@ -150,33 +142,24 @@ This values are normally disregarded in edge-edge contact
 """
 def partial_project_tow(base_mesh, tow):
     
-    tow_normals = tow.new_normals
-    # Check whether the tow data is large enough to contain "inner pts"
-    if len(tow.new_pts[0]) > 2:
-        inner = True 
-    else:
-        inner=False
-    
+    tow_normals = tow.new_normals[1:-1,1:-1]
+    project_origins = tow.projection_origins()[1:-1,1:-1]
+    project_normals = tow_normals * -1
+
     # Create tow points above the surface to project 'down'
     # Inner = True --> Inner rows only, False --> All points
-    project_origins = tow.projection_origins(inner=inner)
-    if len(project_origins) == 0:
-        return None
     
-    # Adjust normal array to match project_origins
-    project_normals = tow_normals * -1
-    if inner is True:
-        project_normals = project_normals[1:-1]
     
     # Cumulative index of triangles with ray intersectinos. Duplicates allowed
     all_tri_index = np.array([], dtype='int32')
 
     # Itterate through to find intersecting triangles. Other data not necessary
     for i in range(len(project_origins)):
-        origins = project_origins[i][:]
-        start = time.clock()
-        tri_index, vec_index = base_mesh.ray.intersects_id(origins, project_normals, multiple_hits=False)
-        print(f"----- time_ray = {time.clock() - start}")
+        print(len(project_normals[i]), len(project_origins[i]))
+        if len(project_origins[i]) == 0:
+            print("empty")
+            continue
+        tri_index, vec_index = base_mesh.ray.intersects_id(project_origins[i,:], project_normals[i,:], multiple_hits=False)
         all_tri_index = np.append(all_tri_index,tri_index)
 
     return all_tri_index
@@ -191,26 +174,23 @@ def full_project_tow(base_mesh, tow):
     tow_normals = tow.new_normals
     
     # Generate tow points above to project down. Inner=Fallse --> all points returned
-    project_origins = tow.projection_origins(inner=False)
-    if len(project_origins) == 0:
-        return None
-    
+    project_origins = tow.projection_origins()
     project_normals = tow_normals * -1
-    
+
     # Create array to track offsets of each tow point
     tow_z_array = np.zeros_like(project_origins)
 
     for i in range(len(project_origins)):
-        origins = project_origins[i][:]
-        locations, vec_index, tri_index = base_mesh.ray.intersects_location(origins, project_normals, multiple_hits=False)
+        if len(project_origins[i]) == 0:
+            continue
+
+        locations, vec_index, tri_index = base_mesh.ray.intersects_location(project_origins[i,:], project_normals[i,:], multiple_hits=False)
         
         if(len(vec_index) == 0):
             return None
         
-        offsets = tow_normals[vec_index]*tow.t
-        # np.linalg.norm(offsets, axis=1)
+        offsets = tow_normals[i][vec_index]*tow.t
         new_locations = locations + offsets         #location of pts after offset
-        # np.linalg.norm(new_locations - locations, axis=1)
         # np.linalg.norm(locations - tow.new_pts[i][vec_index], axis=1)
         offset_dist = new_locations - tow.new_pts[i][vec_index]     # Overall distance to offset from starting pt
         # np.linalg.norm(offset_dist, axis=1)
@@ -221,18 +201,18 @@ def full_project_tow(base_mesh, tow):
         tow_z_array[i][vec_index] = offset_dist
 
     # Adjust the z array for any transverse outliers
-    adjusted_z_array = outliers_rule(tow_z_array)
-    adjusted_z_array = edge_offset_rule(adjusted_z_array)
+    # adjusted_z_array = outliers_rule(tow_z_array)
+    adjusted_z_array = edge_offset_rule(tow_z_array)
 
     for i in range(len(adjusted_z_array)):
         adjusted_off_dist = np.linalg.norm(adjusted_z_array[i], axis=1)     #distance of offsets
         adjust_pts = np.where(adjusted_off_dist > tow.t/2)[0]             #Only adjust pts with non-zero offset
         offsets = adjusted_z_array[i][adjust_pts]
-        np.linalg.norm(offsets, axis=1)   
         tow.new_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets   #Update tow data with offsets
+        np.linalg.norm(offsets, axis=1)   
 
     # tow_mesh(tow).show()
-    # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins, vector_normals=project_normals, scale=150)
+    # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=project_origins, vector_normals=project_normals, scale=150)
     
     return tow_z_array
 
@@ -240,7 +220,7 @@ def full_project_tow(base_mesh, tow):
 def batch_project_tow(tow, base_mesh, batch_size = 50):
     n_points = len(tow.new_pts[0])
     i = 700
-    origins = tow.projection_origins(inner=False)
+    origins = tow.projection_origins()
     normals = tow.new_normals*-1
     while (i + batch_size < n_points):
         mesh_copy = base_mesh.copy()
@@ -468,4 +448,27 @@ def subdivide_it(mesh, min_length):
             print(f"length = {min(new_mesh.edges_unique_length)} ... subdividing...") #debug print
             new_mesh = new_mesh.subdivide()
         return new_mesh
+
+
+def load_stl(stl_file, dir="stl_files"):
+    cwd = os.getcwd
+    file = os.path.join(cwd,dir,stl_file)
+    mesh_file = trimesh.load_mesh(file)
+    return mesh_file
+
+
+def transverse_adjust(tow, mesh):
+    normals = tow.new_normals
+    project_normals = normals *-1
+    project_origins = tow.projection_origins()
+
+    for i in range(len(tow.tow_points)):
+        locations, vec_index, tri_index = mesh.ray.intersects_location(project_origins[i][:], project_normals[i][:],
+                                                                            multiple_hits=False)
+        if len(tri_index) == 0:
+            print('error: stl file and real tow data are not compatible')
+        else:
+            offset = normals[i][vec_index]*tow.t/2
+            tow.tow_points[i][vec_index] = locations+offset
+
 
