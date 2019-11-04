@@ -13,19 +13,19 @@ def main():
 	width = plys[0].tows[0][0].w
 	'''
 	'''
-	for ply in plys:
+	for ply in plys[2:3]:
 		ply_name = "ply" + str(ply.id)
 		p("*store_elements")
 		p(ply_name)
 		p("#")
 
-		for t in ply.tows[0:20]:
+		for t in ply.tows:
 			create_tow_shell(t)
 			p("*store_elements")
 			p(ply_name)
 			p(t[0].name())
 
-
+	
 	# save_file("marc_surface\\test")
 	
 	assign_geometry(thick)

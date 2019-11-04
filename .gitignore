@@ -9,7 +9,9 @@ __pycache__/
 # MARC Files
 *.proc
 *.mud
-
+*.out
+*.t16
+*job1.dat
 
 # Distribution / packaging
 .Python

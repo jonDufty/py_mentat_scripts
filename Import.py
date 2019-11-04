@@ -17,11 +17,17 @@ from scipy import interpolate as ip
 from geomdl import fitting as fit
 from geomdl.visualization import VisMPL as vis
 
-def main(plys, geom):
+def main(plys, geom, stl=None):
     
     # Initialise plot axis
     fig = plt.figure()
     ax = fig.add_subplot(111,projection='3d')
+
+    # Import stl file if needed
+    base_stl = None
+    if stl:
+        base_stl = load_mesh(stl)
+
 
     # Create a base_mesh to represent currently laid down tows
     base_mesh = Trimesh()
@@ -34,28 +40,30 @@ def main(plys, geom):
             
             # Add additional points and vector information
             t.ortho_offset(t.w) #Create offsets in transverse directions
-            if len(t.new_pts[0]) == 1:
-                continue
             
-            print(f"------\n tow {t._id} \n --------")
-            start = time.clock()
-
             # Interpolate between the points, with the target point distance being t.w/2
             # Where t.w = 3.25 currently.
-            if len(t.new_pts[0]) < 1000:
-                t.interpolate_tow_points()
-            else:
-                t.new_pts = np.array(t.new_pts)
 
+            t.interpolate_tow_points()  
             t.get_new_normals()
-            print(f"----- time_interpolat+normals = {time.clock() - start}")
+
+
+            # Step 2 adjust for curvature using base_stl
+            if base_stl:
+                tranverse_adjust(t, base_stl)
+                t.get_new_normals()
+
 
             # If no base_mesh exists, skip projection. Otheriwse detect whether to offset
             if not base_mesh.is_empty:
                 detect_tow_drop(t,base_mesh,base_mesh_hash_table)
+                t_mesh = tow_mesh(t)
+                base_mesh = base_mesh.__add__(t_mesh)
+            else:
+                t_mesh = tow_mesh(t)
+                base_mesh = t_mesh
 
             # Mesh tow with offset data
-            t_mesh = tow_mesh(t)
             t_mesh_faces = np.array([t._id]*len(t_mesh.faces), dtype='int32')
             
             # Add tow to base mesh (i.e. lay down tow). Update hash table
