@@ -124,12 +124,17 @@ def gen_intersecting_mesh(base_mesh, bodies):
     body_count = mesh_copy.body_count
     # Split mesh modies into individual tow meshes
     mesh_bodies = mesh_copy.split(only_watertight=False)
+    if (len(bodies) is 0):
+        return Trimesh()
 
     # Based on interesting bodies, create new mesh with only those bodies
     intersecting = Trimesh()
     for i in bodies:
-        intersecting = intersecting.__add__(mesh_bodies[i-1])
-    
+        if intersecting.is_empty:
+            intersecting = mesh_bodies[i-1]
+        else:
+            intersecting = intersecting.__add__(mesh_bodies[i-1])
+        
     # intersecting.show()
     return intersecting
 
