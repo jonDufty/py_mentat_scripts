@@ -67,10 +67,10 @@ def main(plys, geom, stl=None):
             t_mesh_faces = np.array([t._id]*len(t_mesh.faces), dtype='int32')
             
             # Add tow to base mesh (i.e. lay down tow). Update hash table
-            if base_mesh.is_empty:
-                base_mesh = t_mesh
-            else:
-                base_mesh = base_mesh.__add__(t_mesh)
+            # if base_mesh.is_empty:
+            #     base_mesh = t_mesh
+            # else:
+            #     base_mesh = base_mesh.__add__(t_mesh)
             base_mesh_hash_table = np.append(base_mesh_hash_table, t_mesh_faces)
 
             # Plot points for visuals
@@ -193,7 +193,7 @@ def interpolate_tow_points(points, target_length):
         
         # call the interpolate curve function
 
-        # curve = fit.interpolate_curve(b,order)
+        curve = fit.interpolate_curve(b,order)
         curve.delta = delta
         evalpts = curve.evalpts     #evalpts is the new list of interpolated points
         new_batch += evalpts        #stich batches back together as created

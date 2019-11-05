@@ -157,9 +157,7 @@ def partial_project_tow(base_mesh, tow):
 
     # Itterate through to find intersecting triangles. Other data not necessary
     for i in range(len(project_origins)):
-        print(len(project_normals[i]), len(project_origins[i]))
         if len(project_origins[i]) == 0:
-            print("empty")
             continue
         tri_index, vec_index = base_mesh.ray.intersects_id(project_origins[i,:], project_normals[i,:], multiple_hits=False)
         all_tri_index = np.append(all_tri_index,tri_index)
@@ -204,7 +202,7 @@ def full_project_tow(base_mesh, tow):
 
     # Adjust the z array for any transverse outliers
     # adjusted_z_array = outliers_rule(tow_z_array)
-    adjusted_z_array = edge_offset_rule(tow_z_array)
+    adjusted_z_array = offset_rule(tow_z_array)
 
     for i in range(len(adjusted_z_array)):
         adjusted_off_dist = np.linalg.norm(adjusted_z_array[i], axis=1)     #distance of offsets
@@ -218,7 +216,7 @@ def full_project_tow(base_mesh, tow):
     
     return tow_z_array
 
-
+'''
 def batch_project_tow(tow, base_mesh, batch_size = 50):
     n_points = len(tow.new_pts[0])
     i = 700
@@ -233,14 +231,13 @@ def batch_project_tow(tow, base_mesh, batch_size = 50):
             locations, vec_index, tri_index = mesh_copy.ray.intersects_location(proj_origins[j], proj_normals, multiple_hits=False)
         i += batch_size
     return
-    
+'''    
 
 """ 
 Projects down from tow points using vectors from FPM data
 onto base mesh using similar method to project up
 returns:    array mapping z_offset values to tow points
             array mapping base_mesh faces to z_offset array
-"""
 def project_tow_points(base_mesh, tow):
     tow_normals = tow.new_normals
     if len(tow.new_pts[0]) > 2:
@@ -288,6 +285,7 @@ def project_tow_points(base_mesh, tow):
     # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=origins[vec_index], vector_normals=project_normals[vec_index], scale=10)
     
     return tow_z_array
+"""
 
 
 """  
