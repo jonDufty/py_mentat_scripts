@@ -18,10 +18,11 @@ class Tow():
         self.coords = [] #This is for the interpolated values
         self.new_pts = [[],[],[],[],[]] #Will eventually rename
         self.new_normals = []
-        self.next_pts = []
+        self.prev_pts = []
         self.mesh = None
         self.pid = pid
         self.proj_dist = 5*pid
+        self.interp_dist = tow_w/2 
 
     def __repr__(self):
         return repr("tow" + str(self._id))
@@ -155,9 +156,13 @@ class Tow():
     as possible.
     Target length is 0.25*tow_width
     """
-    def interpolate_tow_points(self):
-    
-        target_length = self.w/2 #w/4
+    def interpolate_tow_points(self, target=None):
+        self.prev_pts = self.new_pts
+
+        if target:
+            target_length = target #w/4
+        else:
+            target_length = self.interp_dist
         n_pts = len(self.new_pts[2])
         points = np.copy(self.new_pts)
         

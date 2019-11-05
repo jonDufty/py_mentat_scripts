@@ -33,16 +33,16 @@ def main(plys, geom, stl=None):
     base_mesh = Trimesh()
     base_mesh_hash_table = np.array([], dtype='int32')
 
-    for p in plys:
+    for p in plys[0:1]:
         
         # Iterate through each tow
         for t in p.tows:
             
             # Add additional points and vector information
-            t.ortho_offset(t.w) #Create offsets in transverse directions
-            
             # Interpolate between the points, with the target point distance being t.w/2
             # Where t.w = 3.25 currently.
+
+            t.ortho_offset(t.w) #Create offsets in transverse directions
 
             t.interpolate_tow_points()  
             t.get_new_normals()

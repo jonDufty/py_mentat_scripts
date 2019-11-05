@@ -159,7 +159,13 @@ def partial_project_tow(base_mesh, tow):
     for i in range(len(project_origins)):
         if len(project_origins[i]) == 0:
             continue
-        tri_index, vec_index = base_mesh.ray.intersects_id(project_origins[i,:], project_normals[i,:], multiple_hits=False)
+        try:
+            tri_index, vec_index = base_mesh.ray.intersects_id(project_origins[i,:], project_normals[i,:], multiple_hits=False)
+        except:
+            tow.new_pts = np.array(tow.prev_pts)
+            tow.get_new_normals()
+            return partial_project_tow(base_mesh, tow)
+
         all_tri_index = np.append(all_tri_index,tri_index)
 
     return all_tri_index
@@ -191,9 +197,7 @@ def full_project_tow(base_mesh, tow):
         
         offsets = tow_normals[i][vec_index]*tow.t
         new_locations = locations + offsets         #location of pts after offset
-        # np.linalg.norm(locations - tow.new_pts[i][vec_index], axis=1)
         offset_dist = new_locations - tow.new_pts[i][vec_index]     # Overall distance to offset from starting pt
-        # np.linalg.norm(offset_dist, axis=1)
         
         # Check offset distance against distance it was projected to check for 
         # outlier intersections (i.e a cylinder projecting against its inner surface)

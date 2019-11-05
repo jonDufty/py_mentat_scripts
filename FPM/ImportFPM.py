@@ -19,7 +19,6 @@ def get_tows(geom):
 
     # Iterate through ply directories
     for d in sorted(os.listdir(ply_dir)):
-        print(d)
         # Get current directory address
         dir = "/".join([ply_dir,d])
         ply = Ply()
