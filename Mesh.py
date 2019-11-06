@@ -455,8 +455,8 @@ def subdivide_it(mesh, min_length):
 
 
 def load_stl(stl_file, dir="stl_files"):
-    cwd = os.getcwd
-    file = os.path.join(cwd,dir,stl_file)
+    file = os.path.join(dir,stl_file)
+    # file = "stl_files/test_cylinder.stl"
     mesh_file = trimesh.load_mesh(file)
     return mesh_file
 
@@ -465,14 +465,28 @@ def transverse_adjust(tow, mesh):
     normals = tow.new_normals
     project_normals = normals *-1
     project_origins = tow.projection_origins()
+    mesh.merge_vertices()
 
-    for i in range(len(tow.tow_points)):
-        locations, vec_index, tri_index = mesh.ray.intersects_location(project_origins[i][:], project_normals[i][:],
-                                                                            multiple_hits=False)
+    for i in range(len(tow.new_pts)):
+        # locations, vec_index, tri_index = mesh.ray.intersects_location(project_origins[i][:], project_normals[i][:],
+                                                                            # multiple_hits=False)
+        try:
+            locations, vec_index, tri_index = mesh.ray.intersects_location(project_origins[i,:], project_normals[i,:], multiple_hits=False)
+        except:
+            tow.new_pts = np.array(tow.prev_pts)
+            tow.get_new_normals()
+            return transverse_adjust(tow, mesh)
+
         if len(tri_index) == 0:
             print('error: stl file and real tow data are not compatible')
         else:
-            offset = normals[i][vec_index]*tow.t/2
-            tow.tow_points[i][vec_index] = locations+offset
+            next_pts = np.copy(tow.new_pts[i])
+            offset = normals[i]*tow.t/2
+            next_pts[vec_index] = locations
+            off_dist = np.linalg.norm(next_pts-tow.new_pts[i], axis=1)
+            outliers = np.where(off_dist > 3*tow.t)
+            next_pts[outliers] = tow.new_pts[i][outliers]
 
+            tow.new_pts[i] = next_pts
+        # Mesh(mesh).visualize_mesh(tri_index,vector_origins=project_origins[i][vec_index], vector_normals=project_normals[i][vec_index], scale=10)
 

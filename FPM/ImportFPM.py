@@ -11,8 +11,7 @@ reads in files, line by line and imports vector data
 '''
 def get_tows(geom):
     plys = []
-    tow_width = 6.35/2
-    tow_t = 1
+    tow_t = 0.15
     z = 0 #temporary until z-off works
 
     ply_dir = "/".join(["FPM",geom])
@@ -22,10 +21,13 @@ def get_tows(geom):
         # Get current directory address
         dir = "/".join([ply_dir,d])
         ply = Ply()
+        tow_w = tow_width(dir)/2
+        print(tow_w)
 
         # Iterate through every tow pt file in directory and create new tow
-        for f in os.listdir(dir):
-            tow = Tow(tow_width,tow_t, ply._id)
+        for f in sorted(os.listdir(dir)):
+            
+            tow = Tow(tow_w,tow_t, ply._id)
             file = "".join([dir,"/",f])
             skip = start_line(file)
             if skip < 0:
@@ -69,3 +71,13 @@ def start_line(file):
                 skip = line_no + 1
                 break
     return skip
+
+def tow_width(dir):
+    f = os.listdir(dir)[0]
+    file = "".join([dir,"/",f])
+    with open(file, 'r') as f1:
+        for line_no, line in enumerate(f1):
+            if "Tow Width" in line:
+                thickness = line.split(" ")[3]
+                return float(thickness)
+    return 6.35

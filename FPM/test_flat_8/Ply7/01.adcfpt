@@ -25,10 +25,10 @@ value [3016] double 60	# 'Part Width'
 value [3103] double 254	# 'Point Spacing'	
 value [3106] double 6	# 'Tow Width'	
 value [3107] double 0.15	# 'Tow Thickness'	
-value [3108] double 90	# 'Desired Ply Angle'	
+value [3108] double 0	# 'Desired Ply Angle'	
 value [3121] double 0	# '+Gap -Overlap (-1 <= x <= 1)'	
-value [3132] double 0.15	# 'Initial Ply Height'	
-value [3133] double 0.3	# 'Final Ply Height'	
+value [3132] double 0	# 'Initial Ply Height'	
+value [3133] double 0.15	# 'Final Ply Height'	
 value [3144] double 200	# 'Material Aerial Weight'	
 value [3145] double 0	# 'Delta Width'	
 value [3146] double 0	# 'Delta Length'	
@@ -49,16 +49,16 @@ value [3981] string'flat_panel_50_150'	# 'Unknown'
 
 begin
 #	PlyNo	PlyAngle
-ply	2	90
+ply	1	0
 strip	1
 #	idx	X	Y	Z	I	J	K	SDist	Angle	InBounds	Dir X	Dir Y	Dir Z
-pt	1	603	314	25.55	0	0	1	0	90	00000000H	0	-1	0
-pt	2	603	124.666666666667	25.55	0	0	1	189.333333333333	90	00000000H	0	-1	0
-pt	3	603	92.3333333333333	25.55	0	0	1	221.666666666667	90	00000000H	0	-1	0
-pt	4	603	60	25.55	0	0	1	254	90	00000001H	0	-1	0
-pt	5	603	1.4210854715202e-014	25.55	0	0	1	314	90	00000001H	0	-1	0
-pt	6	603	-64.6666666666666	25.55	0	0	1	378.666666666667	90	00000000H	0	-1	0
-pt	7	603	-254	25.55	0	0	1	568	90	00000000H	0	-1	0
+pt	1	346	3	25.4	0	0	1	0	0	00000000H	1	0	0
+pt	2	565.333333333333	3	25.4	0	0	1	219.333333333333	0	00000000H	1	0	0
+pt	3	582.666666666667	3	25.4	0	0	1	236.666666666667	0	00000000H	1	0	0
+pt	4	600	3	25.4	0	0	1	254	0	00000001H	1	0	0
+pt	5	750	3	25.4	0	0	1	404	0	00000001H	1	0	0
+pt	6	784.666666666667	3	25.4	0	0	1	438.666666666667	0	00000000H	1	0	0
+pt	7	1004	3	25.4	0	0	1	658	0	00000000H	1	0	0
 end	1
 
 end

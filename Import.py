@@ -26,14 +26,14 @@ def main(plys, geom, stl=None):
     # Import stl file if needed
     base_stl = None
     if stl:
-        base_stl = load_mesh(stl)
-
+        print("load stl")
+        base_stl = load_stl(stl)
 
     # Create a base_mesh to represent currently laid down tows
     base_mesh = Trimesh()
     base_mesh_hash_table = np.array([], dtype='int32')
 
-    for p in plys[0:1]:
+    for p in plys:
         
         # Iterate through each tow
         for t in p.tows:
@@ -50,9 +50,8 @@ def main(plys, geom, stl=None):
 
             # Step 2 adjust for curvature using base_stl
             if base_stl:
-                tranverse_adjust(t, base_stl)
+                transverse_adjust(t, base_stl)
                 t.get_new_normals()
-
 
             # If no base_mesh exists, skip projection. Otheriwse detect whether to offset
             if not base_mesh.is_empty:
@@ -62,6 +61,10 @@ def main(plys, geom, stl=None):
             else:
                 t_mesh = tow_mesh(t)
                 base_mesh = t_mesh
+
+            # t_mesh.visual.face_colors = [255,0,0,255]
+            # scene = trimesh.Scene([base_mesh, t_mesh])
+            # scene.show()
 
             # Mesh tow with offset data
             t_mesh_faces = np.array([t._id]*len(t_mesh.faces), dtype='int32')
@@ -76,8 +79,11 @@ def main(plys, geom, stl=None):
             # Plot points for visuals
             plot_surface(t.new_pts[0],t.new_pts[-1], ax)
 
-        base_mesh.show()
-    
+        base_mesh.visual.face_colors = [255,0,0,255]
+        scene = trimesh.Scene([base_mesh, base_stl])
+        scene.show()  
+    base_mesh.show()
+
     # Plot surfaces for debugging
     plt.figure(fig.number)
     plt.show()
@@ -107,7 +113,7 @@ returns: PlyMentat(TowMentat(PointMentat)) classes
 def create_mentat_tows(plys):
     m_plys = []
     tow_idx = 1
-    length = 100
+    length = 200
 
     for p in plys:
         m_tows = []
@@ -136,7 +142,7 @@ def batch_tows(tow, length):
 
     batch = []
     i = 0
-    while i + length < len(tow.pts):
+    while i + length < len(tow.pts[0]):
         batch_tow = [[],[],[],[],[]]
         for j in range(len(batch_tow)):
             batch_tow[j] = tow.pts[j][i:i+length]
@@ -274,10 +280,13 @@ if __name__ == '__main__':
 
     # Take in argument with geometry name (used for file lookup)
     geom = sys.argv[1]
+    stl = None
+    if len(sys.argv) > 2:
+        stl=sys.argv[2]
     # Import the tow date
     plys = fpm.get_tows(geom)
     # get ply/tow/point data and manipulate accordingly
-    marc_ply = main(plys, geom)
+    marc_ply = main(plys, geom, stl=stl)
 
     save_tows(marc_ply, sys.argv[1])
 

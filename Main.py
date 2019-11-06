@@ -7,13 +7,27 @@ import os
 
 def main():
 
-	plys = load_tows("test_cylinder_tst.dat")
+	files = [
+			"test_cylinder"
+			# "test_cross.dat"
+		]
+
+	print(files)
+
+	for file_name in files:
+		p("*new_model yes")
+		save_file(file_name)
+		generate_model(file_name)
+
+def generate_model(file):
+
+	plys = load_tows(file)
 	# General variables
 	thick = plys[0].tows[0][0].t
 	width = plys[0].tows[0][0].w
 	'''
 	'''
-	for ply in plys[2:3]:
+	for ply in plys[1:2]:
 		ply_name = "ply" + str(ply.id)
 		p("*store_elements")
 		p(ply_name)
@@ -25,8 +39,6 @@ def main():
 			p(ply_name)
 			p(t[0].name())
 
-	
-	# save_file("marc_surface\\test")
 	
 	assign_geometry(thick)
 
@@ -41,11 +53,14 @@ def main():
 
 	cb_index = cbody_index(plys)
 	create_contact_bodies(plys)
-	print(cb_index)
 
 	ctable = edge_contact(cb_index, 0.2)
 
-	face_contact(0.01, ctable)
+	face_contact(0.05, ctable)
+
+	p("*save_model")
+
+	return
 
 
 def edge_contact(cb_index, tolerance):
@@ -114,6 +129,8 @@ def create_contact_bodies(plys):
 		# iterate through tow sets
 		si = py_get_int("set_id(%d)" % i)
 		sn = py_get_string("set_name(%d)" % si)
+		if "ply" in sn:
+			continue
 		cn = sn.replace("tow","cb")
 		# Create contact body for tow
 		p("*new_cbody mesh *contact_option state:solid *contact_option skip_structural:off")
@@ -140,7 +157,7 @@ def assign_orientation():
 
 def load_tows(file):
 	cwd = os.getcwd()
-	f = "batched\\"+file
+	f = "batched\\"+file+".dat"
 	file_name = "\\".join([cwd,'dat_files',f])
 	# file_name = "/".join([cwd,'tows.dat']) #for linux FS
 	with open(file_name,'rb') as f:
@@ -148,6 +165,7 @@ def load_tows(file):
 	return ply
 
 def save_file(file):
+	print('*set_save_formatted off *save_as_model "%s.mud" yes' % file)
 	p('*set_save_formatted off *save_as_model "%s.mud" yes' % file)
 
 
@@ -161,9 +179,22 @@ def generate_curve(pts):
 	p("*add_points")
 	# for i in pts:
 	# 	generate_points(i)
-	pts = [i.send_coord() for i in pts]
-	pts = " ".join(pts)
-	p(pts)
+	if len(pts) < 200:
+		pts_arr = [i.send_coord() for i in pts]
+		pts_arr = " ".join(pts_arr)
+		p(pts_arr)
+	else:
+		print("too big")
+		k = 0
+		while(k < len(pts)):
+			pts_arr = [i.send_coord() for i in pts[k:k+100]]
+			pts_arr = " ".join(pts_arr)
+			p(pts_arr)
+			k += 100
+		pts_arr = [i.send_coord() for i in pts[k:]]
+		pts_arr = " ".join(pts_arr)
+		p(pts_arr)
+
 	nf = int(py_get_float("npoints()"))
 	pt_to_add = [str(i) for i in list(range(ni+1,nf+1))]
 	pt_to_add = " ".join(pt_to_add)
@@ -189,64 +220,85 @@ def create_tow_shell(tow_list):
 	el_size = float((tow_list[0].w/2)) #change when batched
 	surf_set = "".join(["surf",str(tow_list[0]._id)])
 	print(tow_list[0].name())
+	print(len(tow_list))
+	n_divisions = sum([len(t.pts[0]) for t in tow_list])
+	print(n_divisions)
+
+	p("*invisible_elements")
+	p("all_existing")
+
 	for tow in tow_list:
 		# Generate curves from points on L,R of tow path
 		curves = ""
 		for row in tow.pts:
 			curve = generate_curve(row)
 			curves += (" "+curve)
+
 			
 		# create surface using two guide curves
+		print("surface")
 		p("*set_surface_type skin")
 		p("*set_trim_new_surfs y")
 		p("*add_surfaces")
 		p("%s %s" % (curves, '#'))
 
+
+		# p("@set($convert_surfaces_method,surface_faceted)")
+		# p("*set_curve_div_type_fix")
+		# p("*set_curve_div_type_fix_avgl")
+		# p("*set_curve_div_avgl %s" % str(el_size))
+		# p("*apply_curve_divisions")
+		# p("all_existing")
+		# p("*surface_faceted")
+		# p("all_existing") 
+		
 		# Store surface in set (just in case)
 		# n_surf = int(py_get_float("nsurfaces()"))
 		# p("*store_surfaces")
 		# p(surf_set)
 		# p(str(n_surf))
 		# p("#")
+		print("convert")
 
-	n_prev = py_get_int("nelements()")
+		p("@set($convert_entities,surfaces)")
+		p("@set($convert_surfaces_method,convert_surface")
+		p("*set_convert_uvdiv u %s" % str(len(tow.pts[0])))
+		p("*set_convert_uvdiv v 4")
+		p("*convert_surfaces")
+		p("all_visible")
+		p("*invisible_surface")
+		p("all_existing")
 
-	p("@set($convert_entities,surfaces)")
-	p("@set($convert_surfaces_method,surface_faceted)")
-	p("*set_curve_div_type_fix")
-	p("*set_curve_div_type_fix_avgl")
-	p("*set_curve_div_avgl %s" % str(el_size))
-	p("*apply_curve_divisions")
-	p("all_existing")
-	p("*surface_faceted")
-	p("all_existing") 
 
-	# p("*renumber_surfaces")
-	p("@set($automesh_surface_desc,facets)")
-	p("@set($automesh_surface_family,mixed)")
-	p("*pt_set_element_size %s" % str(el_size))
-	p("*pt_quadmesh_surf")
-	p("all_existing")
+		# # p("*renumber_surfaces")
+		# p("@set($automesh_surface_desc,facets)")
+		# p("@set($automesh_surface_family,mixed)")
+		# p("*pt_set_element_size %s" % str(el_size))
+		# p("*pt_quadmesh_surf")
+		# p("all_existing")
+
+	print("set")
 
 	# Create set for tow
-	n_curr = py_get_int("nelements()")
-	elements = [str(i) for i in list(range(n_prev+1,n_curr+1))]
-	elements = " ".join(elements)
-	p("*select_method_single")
-	p("*select_elements")
-	p("%s %s" % (elements, "#"))
-	
+	# n_curr = py_get_int("nelements()")
+	# elements = [str(i) for i in list(range(n_prev+1,n_curr+1))]
+	# elements = " ".join(elements)
+	# p("*select_method_single")
+	# p("*select_elements")
+	# p("%s %s" % (elements, "#"))
+		
 	p("*store_elements")
 	p(tow.name())
-	p("*all_selected")
+	p("*all_visible")
+
+	p("*clear_geometry")
+	p("select_clear")
 
 	# Sweep nodes to remove duplicates at batch boundary
 	p("*sweep_nodes")
 	p("*set_sweep_tolerance 0.001")
 	p("*all_selected")
 
-	p("*clear_geometry")
-	p("select_clear")
 	
 
 def p(s):
@@ -254,5 +306,4 @@ def p(s):
     py_send(s)
 
 
-if __name__ == "__main__":
-    main()
+
