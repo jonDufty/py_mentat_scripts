@@ -22,7 +22,6 @@ def get_tows(geom):
         dir = "/".join([ply_dir,d])
         ply = Ply()
         tow_w = tow_width(dir)/2
-        print(tow_w)
 
         # Iterate through every tow pt file in directory and create new tow
         for f in sorted(os.listdir(dir)):
@@ -78,6 +77,6 @@ def tow_width(dir):
     with open(file, 'r') as f1:
         for line_no, line in enumerate(f1):
             if "Tow Width" in line:
-                thickness = line.split(" ")[3]
+                thickness = line.split()[3]
                 return float(thickness)
     return 6.35

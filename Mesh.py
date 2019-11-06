@@ -44,7 +44,7 @@ class Mesh():
             scene = trimesh.Scene([mesh, ray_visualize])
         else:
             scene = trimesh.Scene([mesh])
-        scene.show()
+        # scene.show()
 
 
 """  
@@ -93,7 +93,7 @@ def detect_tow_drop(tow, base_mesh, hash_table):
 
     # If not, determine which tows it intersects with
     bodies = identify_tow_bodies(hash_table, tri_index.astype('int32'))
-    print(bodies)
+    # print(bodies)
 
     # Create a new tow mesh to compare
     intersect_mesh = gen_intersecting_mesh(base_mesh, bodies)

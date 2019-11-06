@@ -77,17 +77,22 @@ def main(plys, geom, stl=None):
             base_mesh_hash_table = np.append(base_mesh_hash_table, t_mesh_faces)
 
             # Plot points for visuals
-            plot_surface(t.new_pts[0],t.new_pts[-1], ax)
+            # plot_surface(t.new_pts[0],t.new_pts[-1], ax)
 
-        base_mesh.visual.face_colors = [255,0,0,255]
-        scene = trimesh.Scene([base_mesh, base_stl])
-        scene.show()  
-    base_mesh.show()
+        # base_mesh.visual.face_colors = [255,0,0,255]
+        # scene = trimesh.Scene([base_mesh, base_stl])
+        # scene.show()  
+    # base_mesh.show()
 
     # Plot surfaces for debugging
-    plt.figure(fig.number)
-    plt.show()
+    # plt.figure(fig.number)
+    # plt.show()
     
+    # save base mesh
+    stl_out = geom+"_base.stl"
+    print("...saving mesh at", stl_out)
+    base_mesh.export(stl_out)
+
     # Export tow data to be compatible with Marc, so no package dependencies
     m_plys = create_mentat_tows(plys)
     
