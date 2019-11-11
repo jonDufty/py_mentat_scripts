@@ -23,6 +23,7 @@ class Tow():
         self.pid = pid
         self.proj_dist = 5*pid
         self.interp_dist = tow_w/2 
+        self.trimmed_pts = [[],[],[],[],[]]
 
     def __repr__(self):
         return repr("tow" + str(self._id))

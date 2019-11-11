@@ -3,31 +3,45 @@ from TowMentat import *
 from Material import *
 import pickle
 import os
+import winsound
 
 
 def main():
 
 	files = [
-			"test_cylinder"
-			# "test_cross.dat"
+			"test_flat",
+			# "test_flat_090_6",
+			# "test_flat_8",
+			# "test_flat_quasi_16",
+			# 'test_cylinder',
+			# 'test_cylinder_8',
+			# 'test_cylinder_6',
 		]
 
 	print(files)
 
 	for file_name in files:
 		p("*new_model yes")
-		save_file(file_name)
+		# save_file(file_name)
 		generate_model(file_name)
+
+
+	duration = 1000  # milliseconds
+	freq = 440  # Hz
+	winsound.Beep(freq, duration)
 
 def generate_model(file):
 
 	plys = load_tows(file)
+	print("geom = ", file, "plies = ", len(plys))
+	print(plys[0].tows[0])
 	# General variables
 	thick = plys[0].tows[0][0].t
 	width = plys[0].tows[0][0].w
 	'''
 	'''
-	for ply in plys[1:2]:
+
+	for ply in plys:
 		ply_name = "ply" + str(ply.id)
 		p("*store_elements")
 		p(ply_name)
@@ -38,7 +52,7 @@ def generate_model(file):
 			p("*store_elements")
 			p(ply_name)
 			p(t[0].name())
-
+	
 	
 	assign_geometry(thick)
 
@@ -46,15 +60,11 @@ def generate_model(file):
 
 	assign_orientation()
 
-	'''
-	Note: This is only working for ply-wise models at the moment
-	not generalised yet
-	'''
-
+	
 	cb_index = cbody_index(plys)
 	create_contact_bodies(plys)
 
-	ctable = edge_contact(cb_index, 0.2)
+	ctable = edge_contact(cb_index, 0.1)
 
 	face_contact(0.05, ctable)
 
@@ -64,24 +74,31 @@ def generate_model(file):
 
 
 def edge_contact(cb_index, tolerance):
+	print("contact")
 	ctable_name = "ct_edge_face"
 	p("*new_contact_table")
 	p("*contact_table_name %s" % ctable_name)
 	p("*prog_option ctable:criterion:contact_distance")
 	p("*prog_param ctable:contact_distance %f" % tolerance)
 	p("*prog_option ctable:add_replace_mode:both")
+	print("*prog_option ctable:add_replace_mode:both")
 	p("*prog_option ctable:contact_type:glue")
+	print("*prog_option ctable:contact_type:glue")
 	p("@set($cta_crit_dist_action,list)")
 	
 	for c in cb_index.keys():
 		cb = " ".join(cb_index[c])
 		p("*ctable_add_replace_entries_body_list")
+		print("*ctable_add_replace_entries_body_list")
 		p("%s %s" % (cb, "#"))
-	p("*interact_option retain_gaps:off")
+		print("%s %s" % (cb, "#"))
+		p("*interact_option retain_gaps:on")
 	return ctable_name
 
 
 def face_contact(tolerance, ctable):
+	print("contact")
+
 	p("*edit_contact_table %s" % ctable)
 	p("*prog_option ctable:criterion:contact_distance")
 	p("*prog_param ctable:contact_distance %f" % tolerance)
@@ -89,10 +106,11 @@ def face_contact(tolerance, ctable):
 	p("*prog_option ctable:contact_type:glue")
 	p("@set($cta_crit_dist_action,all_pairs)")
 	p("*ctable_add_replace_entries_all")
-	p("*interact_option retain_gaps:off")
+	p("*interact_option retain_gaps:on")
 
 
 def assign_geometry(t):
+	print("assign_geom")
 
 	# Specify geometry for elements
 	p("*new_geometry")
@@ -123,7 +141,47 @@ def standard_material(m, elements):
     return
 
 
+def create_boundary(geometry):
+	boundaries = {
+		"flat": [
+			"625 60 0",
+			"625 5 0",
+			"725 5 0",
+			"725 60 0",
+		]
+	}
+	boundary = boundaries[geometry]
+	pi = py_get_int("npoints()")
+	pts = " ".join(boundary)
+	p("*add_points")
+	p(pts)
+	pf = py_get_int("npoints()")
+	
+	p("*set_curve_type polyline")
+	p("*add_curves")
+	pt_to_add = [str(i) for i in list(range(pi+1,pf+1))]
+	pt_to_add.append(str(pi+1))
+	p("%s #" % " ".join(pt_to_add))
+
+	p("@set($expand_entities,curves)")
+	p("*expand_remove")
+	p("*set_expand_translation z 200")
+	p("*expand_curves all_existing 1")
+
+	p("@set($move_entities,surfaces)")
+	p("@set($move_application,standard) *prog_option move:mode:translate")
+	p("*set_move_translation z -100")
+	p("*move_surfaces")
+	p("all_existing")
+
+	p("*store_surfaces")
+	p("boundary")
+	p("all_existing")
+
+
+
 def create_contact_bodies(plys):
+	p("*remove_empty_sets")
 	nsets = py_get_int("nsets()")
 	for i in range(1, nsets+1):
 		# iterate through tow sets
@@ -182,6 +240,7 @@ def generate_curve(pts):
 	if len(pts) < 200:
 		pts_arr = [i.send_coord() for i in pts]
 		pts_arr = " ".join(pts_arr)
+		print(pts_arr)
 		p(pts_arr)
 	else:
 		print("too big")
@@ -214,25 +273,45 @@ def generate_elements(surf_name, n_elements):
     pass
 
 
+def trim_boundary(curves):
+	
+	p("*set_surfint_trim2 on")
+	p("*intersect_curves_surface")
+	p("boundary")		#Relying on the boundary being surface 1
+	p("%s %s" % (curves, '#'))
+	
+	# Remove new curves added
+	p("*select_curves")
+	p("trimmed")
+	p("*remove_curves")
+	p("all_unselected")
+
+
+
 def create_tow_shell(tow_list):
 
 	# el_size = float((tow_list.w)) #change when batched
-	el_size = float((tow_list[0].w/2)) #change when batched
 	surf_set = "".join(["surf",str(tow_list[0]._id)])
 	print(tow_list[0].name())
 	print(len(tow_list))
-	n_divisions = sum([len(t.pts[0]) for t in tow_list])
-	print(n_divisions)
+	total_divisions = sum([len(t.pts[0]) for t in tow_list])
 
 	p("*invisible_elements")
 	p("all_existing")
 
 	for tow in tow_list:
+		el_size = min([len(i) for i in tow.pts]) #change when batched
 		# Generate curves from points on L,R of tow path
 		curves = ""
 		for row in tow.pts:
+			if len(row) == 0:
+				continue
 			curve = generate_curve(row)
 			curves += (" "+curve)
+		if curves == "":
+			return
+		# return
+		# trim_boundary(curves)
 
 			
 		# create surface using two guide curves
@@ -259,11 +338,14 @@ def create_tow_shell(tow_list):
 		# p(str(n_surf))
 		# p("#")
 		print("convert")
+		n_divisions = len(tow.pts[2])
+		if total_divisions > 1000:
+			n_divisions *= 4
 
 		p("@set($convert_entities,surfaces)")
 		p("@set($convert_surfaces_method,convert_surface")
-		p("*set_convert_uvdiv u %s" % str(len(tow.pts[0])))
-		p("*set_convert_uvdiv v 4")
+		p("*set_convert_uvdiv u %s" % n_divisions)
+		p("*set_convert_uvdiv v %s" % str(len(tow.pts)))
 		p("*convert_surfaces")
 		p("all_visible")
 		p("*invisible_surface")

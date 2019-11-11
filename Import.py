@@ -17,7 +17,17 @@ from scipy import interpolate as ip
 from geomdl import fitting as fit
 from geomdl.visualization import VisMPL as vis
 
+def get_boundary():
+    bound = trimesh.load("stl_files/flat_boundary.stl")
+    vecs = [[605.5, 54.5], [744.5, 54.5], [744.5, 5.5], [605.5, 5.5]]
+    faces = [[0,1,2],[2,3,0]]
+    height = 50
+    bound = trimesh.creation.extrude_triangulation(vecs,faces,height)
+    return bound
+
 def main(plys, geom, stl=None):
+
+    print(f"FILE: {geom}")
     
     # Initialise plot axis
     fig = plt.figure()
@@ -33,10 +43,14 @@ def main(plys, geom, stl=None):
     base_mesh = Trimesh()
     base_mesh_hash_table = np.array([], dtype='int32')
 
+    boundary = get_boundary()
+    # boundary.show()
+
     for p in plys:
-        
+        print(f"\n{geom} -->PLY: {p._id}")
         # Iterate through each tow
         for t in p.tows:
+            print(f"{geom} > tow {t._id}", end="\t")
             
             # Add additional points and vector information
             # Interpolate between the points, with the target point distance being t.w/2
@@ -78,9 +92,11 @@ def main(plys, geom, stl=None):
 
             # Plot points for visuals
             # plot_surface(t.new_pts[0],t.new_pts[-1], ax)
+            trim_boundary(t, boundary)
 
         # base_mesh.visual.face_colors = [255,0,0,255]
         # scene = trimesh.Scene([base_mesh, base_stl])
+        # scene = trimesh.Scene([base_mesh, boundary])
         # scene.show()  
     # base_mesh.show()
 
@@ -124,10 +140,9 @@ def create_mentat_tows(plys):
         m_tows = []
         for t in p.tows:
             m_points = [[],[],[],[],[]]
-            for i in range(len(t.new_pts[0])):
-                for j in range(len(m_points)):
-                    m_points[j].append(Point_Mentat(t.new_pts[j][i].tolist()))
-
+            for i in range(len(t.trimmed_pts)):
+                for j in range(len(t.trimmed_pts[i])):
+                    m_points[i].append(Point_Mentat(t.trimmed_pts[i][j]))
             new_tow = Tow_Mentat(t._id, m_points, t.t, t.w)
             new_tow = batch_tows(new_tow, length)
             m_tows.append(new_tow)

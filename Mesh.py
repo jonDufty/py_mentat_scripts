@@ -220,6 +220,36 @@ def full_project_tow(base_mesh, tow):
     
     return tow_z_array
 
+
+def trim_boundary(tow, boundary_mesh):
+
+    for i in range(len(tow.new_pts)):
+        in_bounds = boundary_mesh.contains(tow.new_pts[i])
+        indexes = np.where(in_bounds)[0]
+        tmp = tow.new_pts[i,indexes].tolist()
+        tow.trimmed_pts[i] = tmp
+        if len(tmp) > 0:
+            boundary_intersect(tow, i, indexes, boundary_mesh)
+
+def boundary_intersect(tow, i, indexes, boundary_mesh):
+    origins = tow.new_pts[i,[indexes[0], indexes[-1]]]
+    start = tow.new_pts[i][indexes[0]-1] - tow.new_pts[i][indexes[0]]
+    end = tow.new_pts[i][indexes[-1] +1] - tow.new_pts[i][indexes[-1]]
+    normals = [start, end] 
+    locations, vec_index, tri_index = boundary_mesh.ray.intersects_location(origins, normals, multiple_hits=False)
+    dists = np.linalg.norm(locations[vec_index] - origins, axis=1)
+    if dists[0] > tow.w/4:
+        tow.trimmed_pts[i].insert(0,locations[np.where(vec_index == 0)[0]][0].tolist())
+    else:
+        tow.trimmed_pts[i][0] = locations[np.where(vec_index == 0)[0]][0].tolist()
+
+    if dists[1] > tow.w/2:
+        tow.trimmed_pts[i].append(locations[np.where(vec_index == 1)[0][0]].tolist())
+    else:
+        tow.trimmed_pts[i][-1] = locations[np.where(vec_index == 1)[0][0]].tolist()
+    # print("\n\n", tow.trimmed_pts[i])
+
+
 '''
 def batch_project_tow(tow, base_mesh, batch_size = 50):
     n_points = len(tow.new_pts[0])
