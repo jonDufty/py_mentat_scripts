@@ -1,0 +1,14 @@
+style=1
+information summary of job:  model2_example_3d
+version:  Marc 2018.1.0 GA
+date:     Fri Nov 08 10:17:03 2019
+
+    case   inc  cycl  sepa cut   cycl   separ   cut  rmesh time step   total time        displ-mag              
+      #     #     #     #   #      #      #      #     #      of           of         min         max    
+               |--of the inc--|------of the analysis------| the inc      the job
+
+      0      0    1    0    0       1       0     0     0  0.0000E+00  0.0000E+00  6.8837E-13  8.7679E+00
+
+ Job ends with exit number :    3004
+            total wall time:          8.25
+            total cpu  time:          0.59

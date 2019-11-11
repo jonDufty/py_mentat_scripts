@@ -1,0 +1,23 @@
+style=1
+information summary of job:  model6_job1
+version:  Marc 2018.1.0 GA
+date:     Mon Nov 11 13:34:06 2019
+
+    case   inc  cycl  sepa cut   cycl   separ   cut  rmesh time step   total time        displ-mag              
+      #     #     #     #   #      #      #      #     #      of           of         min         max    
+               |--of the inc--|------of the analysis------| the inc      the job
+
+      0      0    0    0    0       0       0     0     0  0.0000E+00  0.0000E+00  0.0000E+00  0.0000E+00
+      1      1    1    0    0       1       0     0     0  1.0000E-01  1.0000E-01  2.2462E-15  9.1280E-01
+      1      2    1    0    0       2       0     0     0  1.0000E-01  2.0000E-01  2.2557E-15  1.8392E+00
+      1      3    1    0    0       3       0     0     0  1.0000E-01  3.0000E-01  2.2371E-15  2.7922E+00
+      1      4    1    0    0       4       0     0     0  1.0000E-01  4.0000E-01  2.2126E-15  3.7675E+00
+      1      5    1    0    0       5       0     0     0  1.0000E-01  5.0000E-01  2.1848E-15  4.7619E+00
+      1      6    1    0    0       6       0     0     0  1.0000E-01  6.0000E-01  2.1550E-15  5.7725E+00
+      1      7    1    0    0       7       0     0     0  1.0000E-01  7.0000E-01  2.1241E-15  6.7968E+00
+      1      8    1    0    0       8       0     0     0  1.0000E-01  8.0000E-01  2.0922E-15  7.8314E+00
+      1      9    1    0    0       9       0     0     0  1.0000E-01  9.0000E-01  2.0583E-15  8.8757E+00
+
+ Job ends with exit number :    3020
+            total wall time:       1290.90
+            total cpu  time:        975.97

@@ -68,6 +68,8 @@ def generate_model(file):
 
 	face_contact(0.05, ctable)
 
+	create_table(0,2)
+
 	p("*save_model")
 
 	return
@@ -381,7 +383,15 @@ def create_tow_shell(tow_list):
 	p("*set_sweep_tolerance 0.001")
 	p("*all_selected")
 
-	
+def create_table(initial, final):
+    p("*new_md_table 1 1")
+    p("*set_md_table_type 1")
+    p("time")
+    p("*table_add")
+    p("0 %s" % initial)
+    p("1 %s" % final)
+    p("*table_fit")
+    return	
 
 def p(s):
     #print(s)
