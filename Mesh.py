@@ -220,7 +220,16 @@ def full_project_tow(base_mesh, tow):
     
     return tow_z_array
 
+def trim_boundary(tow, boundary_mesh):
+    # trimmed_pts = np.copy(tow.new_pts)
+    trim = []
+    for j in range(len(tow.new_pts[0])):
+        in_bounds = boundary_mesh.contains(tow.new_pts[:,j])
+        if any(in_bounds == False):
+            trim.append(j)
+    tow.trimmed_pts = np.delete(tow.new_pts, trim, axis=1).tolist()
 
+"""
 def trim_boundary(tow, boundary_mesh):
 
     for i in range(len(tow.new_pts)):
@@ -230,6 +239,7 @@ def trim_boundary(tow, boundary_mesh):
         tow.trimmed_pts[i] = tmp
         if len(tmp) > 0:
             boundary_intersect(tow, i, indexes, boundary_mesh)
+"""
 
 def boundary_intersect(tow, i, indexes, boundary_mesh):
     origins = tow.new_pts[i,[indexes[0], indexes[-1]]]

@@ -18,7 +18,7 @@ from geomdl import fitting as fit
 from geomdl.visualization import VisMPL as vis
 
 def get_boundary():
-    bound = trimesh.load("stl_files/flat_boundary.stl")
+    # bound = trimesh.load("stl_files/flat_boundary.stl")
     vecs = [[605.5, 54.5], [744.5, 54.5], [744.5, 5.5], [605.5, 5.5]]
     faces = [[0,1,2],[2,3,0]]
     height = 50
