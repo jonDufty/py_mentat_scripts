@@ -17,7 +17,7 @@ def main():
 			'test_cylinder_8',
 			'test_cylinder_45',
 			'test_dome',
-			'test_weave',
+			# 'test_weave',
 		]
 
 	print(files)
