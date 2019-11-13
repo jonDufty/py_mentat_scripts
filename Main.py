@@ -9,13 +9,15 @@ import winsound
 def main():
 
 	files = [
-			"test_flat",
-			# "test_flat_090_6",
-			# "test_flat_8",
-			# "test_flat_quasi_16",
-			# 'test_cylinder',
-			# 'test_cylinder_8',
-			# 'test_cylinder_6',
+			# "test_flat",
+			"test_flat_090_6",
+			"test_flat_8",
+			"test_flat_quasi_16",
+			'test_cylinder',
+			'test_cylinder_8',
+			'test_cylinder_45',
+			'test_dome',
+			'test_weave',
 		]
 
 	print(files)
@@ -64,11 +66,11 @@ def generate_model(file):
 	cb_index = cbody_index(plys)
 	create_contact_bodies(plys)
 
-	ctable = edge_contact(cb_index, 0.1)
+	# ctable = edge_contact(cb_index, 0.1)
 
-	face_contact(0.05, ctable)
+	contact_table(0.01)
 
-	create_table(0,2)
+	create_table(0,0.5)
 
 	p("*save_model")
 
@@ -98,13 +100,14 @@ def edge_contact(cb_index, tolerance):
 	return ctable_name
 
 
-def face_contact(tolerance, ctable):
+def contact_table(tolerance):
 	print("contact")
-
-	p("*edit_contact_table %s" % ctable)
+	ctable_name = "ct_edge_face"
+	p("*new_contact_table")
+	p("*contact_table_name %s" % ctable_name)
 	p("*prog_option ctable:criterion:contact_distance")
 	p("*prog_param ctable:contact_distance %f" % tolerance)
-	p("*prog_option ctable:add_replace_mode:add_only")
+	p("*prog_option ctable:add_replace_mode:both")
 	p("*prog_option ctable:contact_type:glue")
 	p("@set($cta_crit_dist_action,all_pairs)")
 	p("*ctable_add_replace_entries_all")
@@ -275,20 +278,6 @@ def generate_elements(surf_name, n_elements):
     pass
 
 
-def trim_boundary(curves):
-	
-	p("*set_surfint_trim2 on")
-	p("*intersect_curves_surface")
-	p("boundary")		#Relying on the boundary being surface 1
-	p("%s %s" % (curves, '#'))
-	
-	# Remove new curves added
-	p("*select_curves")
-	p("trimmed")
-	p("*remove_curves")
-	p("all_unselected")
-
-
 
 def create_tow_shell(tow_list):
 
@@ -302,6 +291,8 @@ def create_tow_shell(tow_list):
 	p("all_existing")
 
 	for tow in tow_list:
+		print(tow)
+		print(tow.pts)
 		el_size = min([len(i) for i in tow.pts]) #change when batched
 		# Generate curves from points on L,R of tow path
 		curves = ""
@@ -311,6 +302,7 @@ def create_tow_shell(tow_list):
 			curve = generate_curve(row)
 			curves += (" "+curve)
 		if curves == "":
+			print("no points")
 			return
 		# return
 		# trim_boundary(curves)

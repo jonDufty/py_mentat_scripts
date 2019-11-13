@@ -41,10 +41,11 @@ class Mesh():
         if vector_origins != [] and vector_normals != []:
             # stack rays into line segments for visualization as Path3D
             ray_visualize = trimesh.load_path(np.hstack((vector_origins, vector_origins + vector_normals*scale)).reshape(-1, 2, 3))
+            ray_visualize.merge_vertices()
             scene = trimesh.Scene([mesh, ray_visualize])
         else:
             scene = trimesh.Scene([mesh])
-        # scene.show()
+        scene.show()
 
 
 """  
@@ -93,7 +94,7 @@ def detect_tow_drop(tow, base_mesh, hash_table):
 
     # If not, determine which tows it intersects with
     bodies = identify_tow_bodies(hash_table, tri_index.astype('int32'))
-    # print(bodies)
+    print(bodies)
 
     # Create a new tow mesh to compare
     intersect_mesh = gen_intersecting_mesh(base_mesh, bodies)
@@ -198,9 +199,9 @@ def full_project_tow(base_mesh, tow):
         offsets = tow_normals[i][vec_index]*tow.t
         new_locations = locations + offsets         #location of pts after offset
         offset_dist = new_locations - tow.new_pts[i][vec_index]     # Overall distance to offset from starting pt
-        
         # Check offset distance against distance it was projected to check for 
         # outlier intersections (i.e a cylinder projecting against its inner surface)
+        # print(np.linalg.norm(offset_dist, axis=1))
         error_pts = check_offset_distance(offset_dist, tow.proj_dist)
         tow_z_array[i][vec_index] = offset_dist
 
@@ -213,13 +214,13 @@ def full_project_tow(base_mesh, tow):
         adjust_pts = np.where(adjusted_off_dist > tow.t/2)[0]             #Only adjust pts with non-zero offset
         offsets = adjusted_z_array[i][adjust_pts]
         tow.new_pts[i][adjust_pts] = tow.new_pts[i][adjust_pts] + offsets   #Update tow data with offsets
-        np.linalg.norm(offsets, axis=1)   
+        # print(np.linalg.norm(offsets, axis=1))
 
     # tow_mesh(tow).show()
-    # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=project_origins, vector_normals=project_normals, scale=150)
+    # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=project_origins, vector_normals=project_normals, scale=50)
     
     return tow_z_array
-
+"""
 def trim_boundary(tow, boundary_mesh):
     # trimmed_pts = np.copy(tow.new_pts)
     trim = []
@@ -237,14 +238,21 @@ def trim_boundary(tow, boundary_mesh):
         indexes = np.where(in_bounds)[0]
         tmp = tow.new_pts[i,indexes].tolist()
         tow.trimmed_pts[i] = tmp
-        if len(tmp) > 0:
-            boundary_intersect(tow, i, indexes, boundary_mesh)
-"""
+        # if len(tmp) > 0:
+            # boundary_intersect(tow, i, indexes, boundary_mesh)
+
 
 def boundary_intersect(tow, i, indexes, boundary_mesh):
     origins = tow.new_pts[i,[indexes[0], indexes[-1]]]
-    start = tow.new_pts[i][indexes[0]-1] - tow.new_pts[i][indexes[0]]
-    end = tow.new_pts[i][indexes[-1] +1] - tow.new_pts[i][indexes[-1]]
+    if indexes[0] == 0:
+        start = tow.new_pts[i][indexes[0]] - tow.new_pts[i][indexes[1]]
+    else:
+        start = tow.new_pts[i][indexes[0]-1] - tow.new_pts[i][indexes[0]]
+    if indexes[-1] == len(tow.new_pts[i]):
+        end = tow.new_pts[i][indexes[-1]] - tow.new_pts[i][indexes[-1]-1]
+    else:
+        end = tow.new_pts[i][indexes[-1] +1] - tow.new_pts[i][indexes[-1]]
+    
     normals = [start, end] 
     locations, vec_index, tri_index = boundary_mesh.ray.intersects_location(origins, normals, multiple_hits=False)
     dists = np.linalg.norm(locations[vec_index] - origins, axis=1)
@@ -253,7 +261,7 @@ def boundary_intersect(tow, i, indexes, boundary_mesh):
     else:
         tow.trimmed_pts[i][0] = locations[np.where(vec_index == 0)[0]][0].tolist()
 
-    if dists[1] > tow.w/2:
+    if dists[1] > tow.w/4:
         tow.trimmed_pts[i].append(locations[np.where(vec_index == 1)[0][0]].tolist())
     else:
         tow.trimmed_pts[i][-1] = locations[np.where(vec_index == 1)[0][0]].tolist()

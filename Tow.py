@@ -22,7 +22,7 @@ class Tow():
         self.mesh = None
         self.pid = pid
         self.proj_dist = 5*pid
-        self.interp_dist = tow_w/2 
+        self.interp_dist = tow_w*2/6 
         self.trimmed_pts = [[],[],[],[],[]]
 
     def __repr__(self):

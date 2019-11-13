@@ -19,7 +19,13 @@ from geomdl.visualization import VisMPL as vis
 
 def get_boundary():
     # bound = trimesh.load("stl_files/flat_boundary.stl")
+    # Random rectangel
     vecs = [[605.5, 54.5], [744.5, 54.5], [744.5, 5.5], [605.5, 5.5]]
+    faces = [[0,1,2],[2,3,0]]
+    height = 50
+
+    # Weave specimen
+    vecs = [[720, 70],[745,70],[745,-70],[720,-70]]
     faces = [[0,1,2],[2,3,0]]
     height = 50
     bound = trimesh.creation.extrude_triangulation(vecs,faces,height)
@@ -76,8 +82,8 @@ def main(plys, geom, stl=None):
                 t_mesh = tow_mesh(t)
                 base_mesh = t_mesh
 
-            # t_mesh.visual.face_colors = [255,0,0,255]
-            # scene = trimesh.Scene([base_mesh, t_mesh])
+            t_mesh.visual.face_colors = [255,0,0,255]
+            scene = trimesh.Scene([base_mesh, t_mesh])
             # scene.show()
 
             # Mesh tow with offset data
@@ -92,13 +98,14 @@ def main(plys, geom, stl=None):
 
             # Plot points for visuals
             # plot_surface(t.new_pts[0],t.new_pts[-1], ax)
-            trim_boundary(t, boundary)
+            # trim_boundary(t, boundary)
+            t.trimmed_pts = t.new_pts.tolist()
 
         # base_mesh.visual.face_colors = [255,0,0,255]
         # scene = trimesh.Scene([base_mesh, base_stl])
         # scene = trimesh.Scene([base_mesh, boundary])
         # scene.show()  
-    # base_mesh.show()
+    base_mesh.show()
 
     # Plot surfaces for debugging
     # plt.figure(fig.number)
