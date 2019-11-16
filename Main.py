@@ -10,21 +10,21 @@ def main():
 
 	files = [
 			# "test_flat",
-			"test_flat_090_6",
-			"test_flat_8",
-			"test_flat_quasi_16",
-			'test_cylinder',
-			'test_cylinder_8',
-			'test_cylinder_45',
-			'test_dome',
-			# 'test_weave',
+			# "test_flat_090_6",
+			# "test_flat_8",
+			# "test_flat_quasi_16",
+			# 'test_cylinder',
+			# 'test_cylinder_8',
+			# 'test_cylinder_45',
+			# 'test_dome',
+			'test_weave',
 		]
 
 	print(files)
 
 	for file_name in files:
 		p("*new_model yes")
-		# save_file(file_name)
+		save_file(file_name)
 		generate_model(file_name)
 
 
@@ -43,7 +43,7 @@ def generate_model(file):
 	'''
 	'''
 
-	for ply in plys:
+	for ply in plys[0:27]:
 		ply_name = "ply" + str(ply.id)
 		p("*store_elements")
 		p(ply_name)

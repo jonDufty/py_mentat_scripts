@@ -98,8 +98,8 @@ def main(plys, geom, stl=None):
 
             # Plot points for visuals
             # plot_surface(t.new_pts[0],t.new_pts[-1], ax)
-            # trim_boundary(t, boundary)
-            t.trimmed_pts = t.new_pts.tolist()
+            trim_boundary(t, boundary)
+            # t.trimmed_pts = t.new_pts.tolist()
 
         # base_mesh.visual.face_colors = [255,0,0,255]
         # scene = trimesh.Scene([base_mesh, base_stl])
