@@ -18,12 +18,12 @@ class Tow():
         self.coords = [] #This is for the interpolated values
         self.new_pts = [[],[],[],[],[]] #Will eventually rename
         self.new_normals = []
+        self.trimmed_pts = {"start":[], "middle":[], "end":[]}
         self.prev_pts = []
         self.mesh = None
         self.pid = pid
         self.proj_dist = 5*pid
-        self.interp_dist = tow_w*2/6 
-        self.trimmed_pts = [[],[],[],[],[]]
+        self.interp_dist = tow_w/2
 
     def __repr__(self):
         return repr("tow" + str(self._id))

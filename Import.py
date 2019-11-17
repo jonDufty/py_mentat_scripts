@@ -25,7 +25,7 @@ def get_boundary():
     height = 50
 
     # Weave specimen
-    vecs = [[720, 70],[745,70],[745,-70],[720,-70]]
+    vecs = [[740, 70],[765,70],[765,-70],[740,-70]]
     faces = [[0,1,2],[2,3,0]]
     height = 50
     bound = trimesh.creation.extrude_triangulation(vecs,faces,height)
@@ -105,7 +105,7 @@ def main(plys, geom, stl=None):
         # scene = trimesh.Scene([base_mesh, base_stl])
         # scene = trimesh.Scene([base_mesh, boundary])
         # scene.show()  
-    base_mesh.show()
+    # base_mesh.show()
 
     # Plot surfaces for debugging
     # plt.figure(fig.number)
@@ -146,14 +146,50 @@ def create_mentat_tows(plys):
     for p in plys:
         m_tows = []
         for t in p.tows:
-            m_points = [[],[],[],[],[]]
-            for i in range(len(t.trimmed_pts)):
-                for j in range(len(t.trimmed_pts[i])):
-                    m_points[i].append(Point_Mentat(t.trimmed_pts[i][j]))
-            new_tow = Tow_Mentat(t._id, m_points, t.t, t.w)
-            new_tow = batch_tows(new_tow, length)
-            m_tows.append(new_tow)
+            # print("start")
+            # print(np.array(t.trimmed_pts["start"]))
+            # print("middle")
+            # print(np.array(t.trimmed_pts["middle"]))
+            # print("end")
+            # print(np.array(t.trimmed_pts["end"]))
 
+            tow_sections = []
+
+            # Create start trimmed points
+            points = t.trimmed_pts["start"]
+            m_pts = [[],[],[],[],[]]
+            for i in range(len(points)):
+
+                m_pts[i] = [Point_Mentat(points[i][j]) for j in range(len(points[i]))]
+
+            tow_sections.append(Tow_Mentat(t._id, m_pts, t.t, t.w, trimmed=True))
+
+            # Add middle (untrimmed) points
+            points = t.trimmed_pts["middle"]
+            m_pts = [[],[],[],[],[]]
+            for i in range(len(points)):
+                m_pts[i] = [Point_Mentat(points[i][j]) for j in range(len(points[i]))]
+
+            tow_sections.append(Tow_Mentat(t._id, m_pts, t.t, t.w, trimmed=False))
+
+            # Add end trimmed points
+            points = t.trimmed_pts["end"]
+            m_pts = [[],[],[],[],[]]
+            for i in range(len(points)):
+                m_pts[i] = [Point_Mentat(points[i][j]) for j in range(len(points[i]))]
+
+            tow_sections.append(Tow_Mentat(t._id, m_pts, t.t, t.w, trimmed=True))
+
+            # for j in range(len(t.trimmed_pts[i])):
+            #     start_points[i].append(Point_Mentat(t.trimmed_pts["start"][i][j]))
+            #     mid_points[i].append(Point_Mentat(t.trimmed_pts["middle"][i][j]))
+            #     end_points[i].append(Point_Mentat(t.trimmed_pts["end"][i][j]))
+
+            # print(m_pts)
+            # new_tow = Tow_Mentat(t._id, m_pts, t.t, t.w)
+            # new_tow = batch_tows(new_tow, length)
+            m_tows.append(tow_sections)
+            # m_tows.append(new_tow)
         new_ply = Ply_Mentat(p._id, m_tows)
         m_plys.append(new_ply)
 

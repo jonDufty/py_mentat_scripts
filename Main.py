@@ -10,14 +10,14 @@ def main():
 
 	files = [
 			# "test_flat",
-			# "test_flat_090_6",
-			# "test_flat_8",
-			# "test_flat_quasi_16",
+			"test_flat_090_6",
+			"test_flat_8",
+			"test_flat_quasi_16",
 			# 'test_cylinder',
 			# 'test_cylinder_8',
 			# 'test_cylinder_45',
 			# 'test_dome',
-			'test_weave',
+			# 'test_weave',
 		]
 
 	print(files)
@@ -27,34 +27,32 @@ def main():
 		save_file(file_name)
 		generate_model(file_name)
 
-
-	duration = 1000  # milliseconds
-	freq = 440  # Hz
-	winsound.Beep(freq, duration)
+	winsound.PlaySound("SystemQuestion", winsound.SND_ALIAS)
 
 def generate_model(file):
 
 	plys = load_tows(file)
 	print("geom = ", file, "plies = ", len(plys))
-	print(plys[0].tows[0])
+	for i in range(len(plys)):
+		p("*store_elements")
+		p("ply"+str(i+1))
+		p("#")
+
 	# General variables
 	thick = plys[0].tows[0][0].t
 	width = plys[0].tows[0][0].w
 	'''
 	'''
 
-	for ply in plys[0:27]:
+	for ply in plys:
 		ply_name = "ply" + str(ply.id)
-		p("*store_elements")
-		p(ply_name)
-		p("#")
-
 		for t in ply.tows:
 			create_tow_shell(t)
 			p("*store_elements")
 			p(ply_name)
 			p(t[0].name())
-	
+	p("*visible_elements")
+	p("all_existing")
 	
 	assign_geometry(thick)
 
@@ -245,10 +243,8 @@ def generate_curve(pts):
 	if len(pts) < 200:
 		pts_arr = [i.send_coord() for i in pts]
 		pts_arr = " ".join(pts_arr)
-		print(pts_arr)
 		p(pts_arr)
 	else:
-		print("too big")
 		k = 0
 		while(k < len(pts)):
 			pts_arr = [i.send_coord() for i in pts[k:k+100]]
@@ -281,19 +277,17 @@ def generate_elements(surf_name, n_elements):
 
 def create_tow_shell(tow_list):
 
-	# el_size = float((tow_list.w)) #change when batched
-	surf_set = "".join(["surf",str(tow_list[0]._id)])
+	# surf_set = "".join(["surf",str(tow_list[0]._id)])
 	print(tow_list[0].name())
-	print(len(tow_list))
-	total_divisions = sum([len(t.pts[0]) for t in tow_list])
+	total_divisions = sum([len(t.pts) for t in tow_list])
 
 	p("*invisible_elements")
 	p("all_existing")
 
 	for tow in tow_list:
-		print(tow)
-		print(tow.pts)
-		el_size = min([len(i) for i in tow.pts]) #change when batched
+		print("trimmed =",tow.trimmed)
+		el_size = tow.w*2/6
+		curve_div = tow.w/2
 		# Generate curves from points on L,R of tow path
 		curves = ""
 		for row in tow.pts:
@@ -304,9 +298,10 @@ def create_tow_shell(tow_list):
 		if curves == "":
 			print("no points")
 			return
+		print(curves)
 		# return
 		# trim_boundary(curves)
-
+		print("length of pts = ", " ".join([str(len(i)) for i in tow.pts]))
 			
 		# create surface using two guide curves
 		print("surface")
@@ -314,44 +309,50 @@ def create_tow_shell(tow_list):
 		p("*set_trim_new_surfs y")
 		p("*add_surfaces")
 		p("%s %s" % (curves, '#'))
-
-
-		# p("@set($convert_surfaces_method,surface_faceted)")
-		# p("*set_curve_div_type_fix")
-		# p("*set_curve_div_type_fix_avgl")
-		# p("*set_curve_div_avgl %s" % str(el_size))
-		# p("*apply_curve_divisions")
-		# p("all_existing")
-		# p("*surface_faceted")
-		# p("all_existing") 
 		
-		# Store surface in set (just in case)
-		# n_surf = int(py_get_float("nsurfaces()"))
-		# p("*store_surfaces")
-		# p(surf_set)
-		# p(str(n_surf))
-		# p("#")
-		print("convert")
-		n_divisions = len(tow.pts[2])
-		if total_divisions > 1000:
-			n_divisions *= 4
+		n_divisions = max([len(t) for t in tow.pts])
+		print("n_divisions = ", n_divisions)
+		
+		# continue
+		if tow.trimmed == True:
+			print("facet")
+			p("@set($convert_surfaces_method,surface_faceted)")
+			p("*set_convert_remove_original off")
+			p("*set_curve_div_type_fix")
+			p("*set_curve_div_type_fix_avgl")
+			p("*set_curve_div_avgl %s" % str(curve_div))
+			p("*apply_curve_divisions")
+			p("all_existing")
+			p("*surface_faceted")
+			print("n surfaces ", py_get_int("nsurfaces()"))
+			p("%s #" % py_get_int("nsurfaces()")) 
+			# p("all_existing")
+			p("@set($automesh_surface_desc,facets)")
+			p("*pt_set_element_size %s" % str(el_size))
+			if n_divisions < 4:
+				p("@set($automesh_surface_family,tria)")
+				p("*pt_trimesh_surf")
+			else:
+				p("@set($automesh_surface_family,mixed)")
+				p("*pt_quadmesh_surf")
+			p("all_visible")
 
-		p("@set($convert_entities,surfaces)")
-		p("@set($convert_surfaces_method,convert_surface")
-		p("*set_convert_uvdiv u %s" % n_divisions)
-		p("*set_convert_uvdiv v %s" % str(len(tow.pts)))
-		p("*convert_surfaces")
-		p("all_visible")
-		p("*invisible_surface")
-		p("all_existing")
+		else:
+			print("convert")
+			
+			
+			if total_divisions > 1000:
+				n_divisions *= 4
+			
 
+			p("@set($convert_entities,surfaces)")
+			p("@set($convert_surfaces_method,convert_surface")
+			p("*set_convert_uvdiv u %s" % str(n_divisions-1))
+			p("*set_convert_uvdiv v %s" % str(len(tow.pts)-1))
+			p("*convert_surfaces")
+			p("%s #" % py_get_int("nsurfaces()"))
 
-		# # p("*renumber_surfaces")
-		# p("@set($automesh_surface_desc,facets)")
-		# p("@set($automesh_surface_family,mixed)")
-		# p("*pt_set_element_size %s" % str(el_size))
-		# p("*pt_quadmesh_surf")
-		# p("all_existing")
+		p("*invisible_surface all_existing") 
 
 	print("set")
 
@@ -363,17 +364,25 @@ def create_tow_shell(tow_list):
 	# p("*select_elements")
 	# p("%s %s" % (elements, "#"))
 		
+	# Sweep nodes to remove duplicates at batch boundary
+	p("*set_sweep_tolerance 0.001")
+	p("*sweep_nodes")
+	p("*all_visible")
+	
 	p("*store_elements")
 	p(tow.name())
 	p("*all_visible")
 
 	p("*clear_geometry")
+	# p("*remove_pts")
+	# p("all_existing")
+	# p("*remove_curves")
+	# p("all_existing")
+	p("*invisible_elements")
+	p("all_existing")
+	
 	p("select_clear")
 
-	# Sweep nodes to remove duplicates at batch boundary
-	p("*sweep_nodes")
-	p("*set_sweep_tolerance 0.001")
-	p("*all_selected")
 
 def create_table(initial, final):
     p("*new_md_table 1 1")

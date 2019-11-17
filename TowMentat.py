@@ -12,12 +12,13 @@ class Ply_Mentat():
         
 
 class Tow_Mentat(object):
-    def __init__(self,id, pts, t, w, ply=None):
+    def __init__(self,id, pts, t, w, ply=None, trimmed=False):
         self._id = id
         self.pts = pts
         self.t = t
         self.w = w
         self.ply = ply
+        self.trimmed = trimmed
 
     def name(self):
         return "".join(['tow', str(self._id)])

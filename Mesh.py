@@ -220,6 +220,7 @@ def full_project_tow(base_mesh, tow):
     # Mesh(base_mesh).visualize_mesh(tri_index,vector_origins=project_origins, vector_normals=project_normals, scale=50)
     
     return tow_z_array
+
 """
 def trim_boundary(tow, boundary_mesh):
     # trimmed_pts = np.copy(tow.new_pts)
@@ -231,41 +232,94 @@ def trim_boundary(tow, boundary_mesh):
     tow.trimmed_pts = np.delete(tow.new_pts, trim, axis=1).tolist()
 
 """
+
+
 def trim_boundary(tow, boundary_mesh):
-
-    for i in range(len(tow.new_pts)):
-        in_bounds = boundary_mesh.contains(tow.new_pts[i])
-        indexes = np.where(in_bounds)[0]
-        tmp = tow.new_pts[i,indexes].tolist()
-        tow.trimmed_pts[i] = tmp
-        # if len(tmp) > 0:
-            # boundary_intersect(tow, i, indexes, boundary_mesh)
-
-
-def boundary_intersect(tow, i, indexes, boundary_mesh):
-    origins = tow.new_pts[i,[indexes[0], indexes[-1]]]
-    if indexes[0] == 0:
-        start = tow.new_pts[i][indexes[0]] - tow.new_pts[i][indexes[1]]
-    else:
-        start = tow.new_pts[i][indexes[0]-1] - tow.new_pts[i][indexes[0]]
-    if indexes[-1] == len(tow.new_pts[i]):
-        end = tow.new_pts[i][indexes[-1]] - tow.new_pts[i][indexes[-1]-1]
-    else:
-        end = tow.new_pts[i][indexes[-1] +1] - tow.new_pts[i][indexes[-1]]
+    start = []
+    middle = []
+    end = []
+    print(len(tow.new_pts[0]))
+    for i in range(len(tow.new_pts[0])):
+        # print(f"row {i}", end="\t")
+        in_bounds = boundary_mesh.contains(tow.new_pts[:,i])
+        # if all(in_bounds == False):
+            # print("All points out of bounds", end="\t")
+            
+        if any(in_bounds == False):
+            if len(middle) == 0:
+                start.append(i)
+                # print("Partial in bounds")
+            else:
+                end.append(i)
+                # print("Partial in bounds")
+        else:
+            middle.append(i)
+            # print("All in bounds")
     
-    normals = [start, end] 
-    locations, vec_index, tri_index = boundary_mesh.ray.intersects_location(origins, normals, multiple_hits=False)
-    dists = np.linalg.norm(locations[vec_index] - origins, axis=1)
-    if dists[0] > tow.w/4:
-        tow.trimmed_pts[i].insert(0,locations[np.where(vec_index == 0)[0]][0].tolist())
-    else:
-        tow.trimmed_pts[i][0] = locations[np.where(vec_index == 0)[0]][0].tolist()
+    if len(middle) <= 1:
+        # tow.trimmed_pts["start"] = boundary_intersect(tow.new_pts[:,start], boundary_mesh, start_flag=True)
+        return 
 
-    if dists[1] > tow.w/4:
-        tow.trimmed_pts[i].append(locations[np.where(vec_index == 1)[0][0]].tolist())
-    else:
-        tow.trimmed_pts[i][-1] = locations[np.where(vec_index == 1)[0][0]].tolist()
-    # print("\n\n", tow.trimmed_pts[i])
+    tow.trimmed_pts["middle"] = tow.new_pts[:,middle].tolist()
+
+    # Add inside points to start an end so there is at least one point inside
+    if len(start) > 0: 
+        start.append(max(start) + 1)
+        tow.trimmed_pts["start"] = boundary_intersect(tow.new_pts[:,start], boundary_mesh, start_flag=True)
+    if len(end) > 0: 
+        end.insert(0,min(end) -1)
+        tow.trimmed_pts["end"] = boundary_intersect(tow.new_pts[:,end], boundary_mesh, start_flag=False)
+
+    # print(f"start = {start}\n middle={middle}\n end={end}")
+
+
+def boundary_intersect(trim_array, boundary_mesh, start_flag=True):
+    # print (trim_array)
+    trimmed_array = [[],[],[],[],[]]
+    origins = []
+    rays = []
+    start = []
+    end = []
+    indexes = []
+
+    for i in range(len(trim_array)):
+        trim = []
+        # print(trim_array[i,:])
+        in_bound = np.where(boundary_mesh.contains(trim_array[i,:].tolist()) == True)[0]
+        out_bound = np.where(boundary_mesh.contains(trim_array[i,:].tolist()) == False)[0]
+
+        # print(f"in_bound = {in_bound} out = {out_bound}")
+        
+        if len(out_bound) == 0 or len(in_bound) == 0:
+            continue
+        
+        if start_flag is True:
+            start.append(trim_array[i,min(in_bound)])
+            end.append(trim_array[i,max(out_bound)])
+        else:
+            start.append(trim_array[i,max(in_bound)])
+            end.append(trim_array[i,min(out_bound)])
+        trimmed_array[i] = trim_array[i][in_bound].tolist()
+        indexes.append(i)
+    
+    if len(start) == 0:
+        return trimmed_array
+    # print(f"start= {start} \n end = {end}")   
+    origins = np.array(start)
+    rays = (np.array(end)-np.array(start)).tolist()
+    # print(f"origins = {origins} rays = {rays}")   
+     
+    location, vec, tri = boundary_mesh.ray.intersects_location(origins, rays, multiple_hits=False)
+    for j in range(len(vec)):
+        loc = location[j]
+        i = vec[j]
+        if start_flag is True:
+            trimmed_array[i].insert(0,loc.tolist())
+        else:
+            trimmed_array[i].append(loc.tolist())
+
+    return trimmed_array
+
 
 
 '''
