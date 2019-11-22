@@ -26,7 +26,7 @@ or
 
 `$ conda install -c condaforge *package*`
 
-##File Structure
+## File Structure
 The file structure is set up with most of the relevant script files in the root directory. The only relevant folders are FPM, stl_files and dat_files
 
 FPM contains all the tow data. Each different 'design' has its own folder in the FPM directory with the name of the design (which is referenced later). Each design is separated into ply directories and each ply directory as an individual file for each tow. This structure is important as it is how the import file expects to read it in as.
@@ -37,7 +37,7 @@ The stl_files folder contains any stl files of the original 3D models that can b
 
 The dat_files folder contains the serialised data structures output by the python interface to be read into the Marc interface
 
-##Python Interface
+## Python Interface
 
 The Python interface is the side that reads in the FPM data and pre-processes it to return a data structure that can be read into Marc. The relevant files are as follows
 
@@ -46,7 +46,7 @@ The Python interface is the side that reads in the FPM data and pre-processes it
 - Import.py - the main file that calls every other function
 - Mesh.py - this contains most of the trimesh related helper functions for calculating the z-offset
 
-###Usage
+### Usage
 
 You specify the file as a command line argument, and if you wish to include an stl_file of the original model you add that as an additional argument as well.
 
@@ -56,7 +56,7 @@ e.g.
 
 `python Import.py flat_panel flat_panel.stl`
 
-##Marc Interface
+## Marc Interface
 
 This is all run through Marc itself. From the program you neded to select the python file to run. 
 Main.py is the only file required
