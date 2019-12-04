@@ -1,3 +1,12 @@
+"""
+Simple batch file that will run Import.py on all sollected test files,
+Add/comment our the files you want to or don't want to run
+Arguments:
+1 + 2: Will always be python, Import.py
+3: Test file name
+4: [optional] stl file name
+"""
+
 import subprocess
 
 files = [

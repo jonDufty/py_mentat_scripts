@@ -7,7 +7,7 @@ import winsound
 
 
 def main():
-
+	# For geenrating multiple files, specify file names in this list
 	files = [
 			# "test_flat",
 			"test_flat_090_6",
@@ -20,8 +20,6 @@ def main():
 			# 'test_weave',
 		]
 
-	print(files)
-
 	for file_name in files:
 		p("*new_model yes")
 		save_file(file_name)
@@ -30,6 +28,13 @@ def main():
 	winsound.PlaySound("SystemQuestion", winsound.SND_ALIAS)
 
 def generate_model(file):
+ """Main function for generating model in Marc
+ 
+ Parameters
+ ----------
+ file : String
+	 file name to open based on array above
+ """   	
 
 	plys = load_tows(file)
 	print("geom = ", file, "plies = ", len(plys))
@@ -41,8 +46,6 @@ def generate_model(file):
 	# General variables
 	thick = plys[0].tows[0][0].t
 	width = plys[0].tows[0][0].w
-	'''
-	'''
 
 	for ply in plys:
 		ply_name = "ply" + str(ply.id)
@@ -51,6 +54,7 @@ def generate_model(file):
 			p("*store_elements")
 			p(ply_name)
 			p(t[0].name())
+	
 	p("*visible_elements")
 	p("all_existing")
 	
@@ -59,12 +63,9 @@ def generate_model(file):
 	standard_material(T300, "all_existing")
 
 	assign_orientation()
-
 	
 	cb_index = cbody_index(plys)
 	create_contact_bodies(plys)
-
-	# ctable = edge_contact(cb_index, 0.1)
 
 	contact_table(0.01)
 
@@ -73,6 +74,94 @@ def generate_model(file):
 	p("*save_model")
 
 	return
+
+
+def create_tow_shell(tow_list):
+    
+	# surf_set = "".join(["surf",str(tow_list[0]._id)])
+	print(tow_list[0].name())
+	total_divisions = sum([len(t.pts) for t in tow_list])
+
+	p("*invisible_elements")
+	p("all_existing")
+
+	for tow in tow_list:
+		print("trimmed =",tow.trimmed)
+		el_size = tow.w*2/6
+		curve_div = tow.w/2
+		
+		# Generate curves from points on L,R of tow path
+		curves = ""
+		for row in tow.pts:
+			if len(row) == 0:
+				continue
+			curve = generate_curve(row)
+			curves += (" "+curve)
+		if curves == "":
+			print("no points")
+			return
+		
+		# create surface using two guide curves
+		p("*set_surface_type skin")
+		p("*set_trim_new_surfs y")
+		p("*add_surfaces")
+		p("%s %s" % (curves, '#'))
+		
+		n_divisions = max([len(t) for t in tow.pts])
+		
+		# continue
+		if tow.trimmed == True:
+			print("facet")
+			p("@set($convert_surfaces_method,surface_faceted)")
+			p("*set_convert_remove_original off")
+			p("*set_curve_div_type_fix")
+			p("*set_curve_div_type_fix_avgl")
+			p("*set_curve_div_avgl %s" % str(curve_div))
+			p("*apply_curve_divisions")
+			p("all_existing")
+			p("*surface_faceted")
+			print("n surfaces ", py_get_int("nsurfaces()"))
+			p("%s #" % py_get_int("nsurfaces()")) 
+			# p("all_existing")
+			p("@set($automesh_surface_desc,facets)")
+			p("*pt_set_element_size %s" % str(el_size))
+			if n_divisions < 4:
+				p("@set($automesh_surface_family,tria)")
+				p("*pt_trimesh_surf")
+			else:
+				p("@set($automesh_surface_family,mixed)")
+				p("*pt_quadmesh_surf")
+			p("all_visible")
+
+		else:
+			if total_divisions > 1000:
+				n_divisions *= 4
+
+			p("@set($convert_entities,surfaces)")
+			p("@set($convert_surfaces_method,convert_surface")
+			p("*set_convert_uvdiv u %s" % str(n_divisions-1))
+			p("*set_convert_uvdiv v %s" % str(len(tow.pts)-1))
+			p("*convert_surfaces")
+			p("%s #" % py_get_int("nsurfaces()"))
+
+		p("*invisible_surface all_existing") 
+
+
+	# Sweep nodes to remove duplicates at batch boundary
+	p("*set_sweep_tolerance 0.001")
+	p("*sweep_nodes")
+	p("*all_visible")
+	
+	p("*store_elements")
+	p(tow.name())
+	p("*all_visible")
+
+	# Clear geometry to simplify indexing for future tows
+	p("*clear_geometry")
+	p("*invisible_elements")
+	p("all_existing")
+	
+	p("select_clear")
 
 
 def edge_contact(cb_index, tolerance):
@@ -270,118 +359,7 @@ def generate_curve(pts):
 
 
 
-def generate_elements(surf_name, n_elements):
-    pass
 
-
-
-def create_tow_shell(tow_list):
-
-	# surf_set = "".join(["surf",str(tow_list[0]._id)])
-	print(tow_list[0].name())
-	total_divisions = sum([len(t.pts) for t in tow_list])
-
-	p("*invisible_elements")
-	p("all_existing")
-
-	for tow in tow_list:
-		print("trimmed =",tow.trimmed)
-		el_size = tow.w*2/6
-		curve_div = tow.w/2
-		# Generate curves from points on L,R of tow path
-		curves = ""
-		for row in tow.pts:
-			if len(row) == 0:
-				continue
-			curve = generate_curve(row)
-			curves += (" "+curve)
-		if curves == "":
-			print("no points")
-			return
-		print(curves)
-		# return
-		# trim_boundary(curves)
-		print("length of pts = ", " ".join([str(len(i)) for i in tow.pts]))
-			
-		# create surface using two guide curves
-		print("surface")
-		p("*set_surface_type skin")
-		p("*set_trim_new_surfs y")
-		p("*add_surfaces")
-		p("%s %s" % (curves, '#'))
-		
-		n_divisions = max([len(t) for t in tow.pts])
-		print("n_divisions = ", n_divisions)
-		
-		# continue
-		if tow.trimmed == True:
-			print("facet")
-			p("@set($convert_surfaces_method,surface_faceted)")
-			p("*set_convert_remove_original off")
-			p("*set_curve_div_type_fix")
-			p("*set_curve_div_type_fix_avgl")
-			p("*set_curve_div_avgl %s" % str(curve_div))
-			p("*apply_curve_divisions")
-			p("all_existing")
-			p("*surface_faceted")
-			print("n surfaces ", py_get_int("nsurfaces()"))
-			p("%s #" % py_get_int("nsurfaces()")) 
-			# p("all_existing")
-			p("@set($automesh_surface_desc,facets)")
-			p("*pt_set_element_size %s" % str(el_size))
-			if n_divisions < 4:
-				p("@set($automesh_surface_family,tria)")
-				p("*pt_trimesh_surf")
-			else:
-				p("@set($automesh_surface_family,mixed)")
-				p("*pt_quadmesh_surf")
-			p("all_visible")
-
-		else:
-			print("convert")
-			
-			
-			if total_divisions > 1000:
-				n_divisions *= 4
-			
-
-			p("@set($convert_entities,surfaces)")
-			p("@set($convert_surfaces_method,convert_surface")
-			p("*set_convert_uvdiv u %s" % str(n_divisions-1))
-			p("*set_convert_uvdiv v %s" % str(len(tow.pts)-1))
-			p("*convert_surfaces")
-			p("%s #" % py_get_int("nsurfaces()"))
-
-		p("*invisible_surface all_existing") 
-
-	print("set")
-
-	# Create set for tow
-	# n_curr = py_get_int("nelements()")
-	# elements = [str(i) for i in list(range(n_prev+1,n_curr+1))]
-	# elements = " ".join(elements)
-	# p("*select_method_single")
-	# p("*select_elements")
-	# p("%s %s" % (elements, "#"))
-		
-	# Sweep nodes to remove duplicates at batch boundary
-	p("*set_sweep_tolerance 0.001")
-	p("*sweep_nodes")
-	p("*all_visible")
-	
-	p("*store_elements")
-	p(tow.name())
-	p("*all_visible")
-
-	p("*clear_geometry")
-	# p("*remove_pts")
-	# p("all_existing")
-	# p("*remove_curves")
-	# p("all_existing")
-	p("*invisible_elements")
-	p("all_existing")
-	
-	p("select_clear")
 
 
 def create_table(initial, final):
