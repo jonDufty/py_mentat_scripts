@@ -1,7 +1,6 @@
 import pickle
 import sys
 import FPM.ImportFPM as fpm
-# import FPM.ImportFPM as fpm
 from TowMentat import *
 from Vector import Vector
 from Point import Point
@@ -13,57 +12,54 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import scipy as sp
-from scipy import interpolate as ip
 from geomdl import fitting as fit
 from geomdl.visualization import VisMPL as vis
 
-def get_boundary():
-    # bound = trimesh.load("stl_files/flat_boundary.stl")
-    # Random rectangel
-    vecs = [[605.5, 54.5], [744.5, 54.5], [744.5, 5.5], [605.5, 5.5]]
-    faces = [[0,1,2],[2,3,0]]
-    height = 50
-
-    # Weave specimen
-    vecs = [[740, 70],[765,70],[765,-70],[740,-70]]
-    faces = [[0,1,2],[2,3,0]]
-    height = 50
-    bound = trimesh.creation.extrude_triangulation(vecs,faces,height)
-    return bound
 
 def main(plys, geom, stl=None):
+    """
+    Main function for pre-processing. Follows the following steps
+    1 - Interpolate points transversely
+    2 - Interpolate points longitudinally
+    2a - Adjust points based off base stl file if specified
+    3 - Check for z-offset through detect_tow_drop
+    4 - Add tow mesh to bash mesh and update hash table
+    5 - Trim boundaries if required
+    6 - Export plies in Marc compatible form
+    """
 
     print(f"FILE: {geom}")
     
-    # Initialise plot axis
+    # Initialise plot axis - for Matplotlib
     fig = plt.figure()
     ax = fig.add_subplot(111,projection='3d')
 
     # Import stl file if needed
     base_stl = None
     if stl:
-        print("load stl")
         base_stl = load_stl(stl)
 
     # Create a base_mesh to represent currently laid down tows
     base_mesh = Trimesh()
     base_mesh_hash_table = np.array([], dtype='int32')
 
+    # Optionally generate boundary mesh if required
     boundary = get_boundary()
-    # boundary.show()
+
 
     for p in plys:
+        
         print(f"\n{geom} -->PLY: {p._id}")
+        
         # Iterate through each tow
         for t in p.tows:
             print(f"{geom} > tow {t._id}", end="\t")
             
             # Add additional points and vector information
+            #Create offsets in transverse directions
+            t.ortho_offset(t.w) 
+
             # Interpolate between the points, with the target point distance being t.w/2
-            # Where t.w = 3.25 currently.
-
-            t.ortho_offset(t.w) #Create offsets in transverse directions
-
             t.interpolate_tow_points()  
             t.get_new_normals()
 
@@ -82,34 +78,21 @@ def main(plys, geom, stl=None):
                 t_mesh = tow_mesh(t)
                 base_mesh = t_mesh
 
-            t_mesh.visual.face_colors = [255,0,0,255]
-            scene = trimesh.Scene([base_mesh, t_mesh])
-            # scene.show()
-
             # Mesh tow with offset data
             t_mesh_faces = np.array([t._id]*len(t_mesh.faces), dtype='int32')
             
-            # Add tow to base mesh (i.e. lay down tow). Update hash table
-            # if base_mesh.is_empty:
-            #     base_mesh = t_mesh
-            # else:
-            #     base_mesh = base_mesh.__add__(t_mesh)
             base_mesh_hash_table = np.append(base_mesh_hash_table, t_mesh_faces)
 
-            # Plot points for visuals
-            # plot_surface(t.new_pts[0],t.new_pts[-1], ax)
-            trim_boundary(t, boundary)
-            # t.trimmed_pts = t.new_pts.tolist()
+            # Optionally plot points for visuals
+            plot_surface(t.new_pts[0],t.new_pts[-1], ax)
 
-        # base_mesh.visual.face_colors = [255,0,0,255]
-        # scene = trimesh.Scene([base_mesh, base_stl])
-        # scene = trimesh.Scene([base_mesh, boundary])
-        # scene.show()  
-    # base_mesh.show()
+            # Optionally trim tow points based on boundary mesh. Comment out if not planned, otherwise uncomment line below
+            # trim_boundary(t, boundary)
+            t.trimmed_pts = t.new_pts.tolist()
 
     # Plot surfaces for debugging
-    # plt.figure(fig.number)
-    # plt.show()
+    plt.figure(fig.number)
+    plt.show()
     
     # save base mesh
     stl_out = geom+"_base.stl"
@@ -121,24 +104,21 @@ def main(plys, geom, stl=None):
     
     return m_plys
 
-""" 
-REDUNANT CLASS: Will remove
-"""
-def create_ply_index(m_tows):
-    ply = {}
-    for t in m_tows:
-        if t[0].ply in ply.keys():
-            ply[t[0].ply].append(t[0].name())
-        else:
-            ply[t[0].ply] = [t[0].name()]
-    return ply
 
-
-""" 
-Create Marc/py_mentat compatible class
-returns: PlyMentat(TowMentat(PointMentat)) classes
-"""
 def create_mentat_tows(plys):
+    """ Create Marc/py_mentat compatible class
+    returns: PlyMentat(TowMentat(PointMentat)) classes
+    
+    Parameters
+    ----------
+    plys : list(Ply)
+        list of all plys with adjusted tow data
+    
+    Returns
+    -------
+    list(PlyMentat)
+        list of compatabile Ply/Tow/Point data
+    """    
     m_plys = []
     tow_idx = 1
     length = 200
@@ -146,12 +126,6 @@ def create_mentat_tows(plys):
     for p in plys:
         m_tows = []
         for t in p.tows:
-            # print("start")
-            # print(np.array(t.trimmed_pts["start"]))
-            # print("middle")
-            # print(np.array(t.trimmed_pts["middle"]))
-            # print("end")
-            # print(np.array(t.trimmed_pts["end"]))
 
             tow_sections = []
 
@@ -179,27 +153,29 @@ def create_mentat_tows(plys):
                 m_pts[i] = [Point_Mentat(points[i][j]) for j in range(len(points[i]))]
 
             tow_sections.append(Tow_Mentat(t._id, m_pts, t.t, t.w, trimmed=True))
-
-            # for j in range(len(t.trimmed_pts[i])):
-            #     start_points[i].append(Point_Mentat(t.trimmed_pts["start"][i][j]))
-            #     mid_points[i].append(Point_Mentat(t.trimmed_pts["middle"][i][j]))
-            #     end_points[i].append(Point_Mentat(t.trimmed_pts["end"][i][j]))
-
-            # print(m_pts)
-            # new_tow = Tow_Mentat(t._id, m_pts, t.t, t.w)
-            # new_tow = batch_tows(new_tow, length)
             m_tows.append(tow_sections)
-            # m_tows.append(new_tow)
+
         new_ply = Ply_Mentat(p._id, m_tows)
         m_plys.append(new_ply)
 
     return m_plys   
 
-"""  
-Batches TowMentat classes into batches containing $length number of poitns
-This is to prevent Marc from crashing when passing in too many points
-"""
 def batch_tows(tow, length):
+    """Batches TowMentat classes into batches containing $length number of poitns
+    This is to prevent Marc from crashing when passing in too many points
+    
+    Parameters
+    ----------
+    tow : TowMentat
+        Tow to split into batches
+    length : int
+        maximum amount of points in each tow
+    
+    Returns
+    -------
+    list(TowMentat)
+        list of tows representing split up tow
+    """    
     if len(tow.pts[0]) < length:
         return [tow]
 
@@ -222,61 +198,21 @@ def batch_tows(tow, length):
 
     return batch
 
-""" 
-Takes in array of points, and interpolates in between them using geomdl package
-Interpoaltes to a level such that the distance between points is roughly equal to 
-$target_length
-Interpolates in batches, as large arrays can cause errors
-"""
-def interpolate_tow_points(points, target_length):
-    
-    # Batch up for large tows
-    batch = []
-    new_batch = []
-    i = 0
-    batch_sz = 100
-    while(i + batch_sz < len(points)):
-        batch.append(points[i:i+batch_sz])
-        i += batch_sz -1
-    batch.append(points[i:])
-
-    for b in batch:
-        if len(b) <= 2:     #If only two points - linear interpolation
-            order = 1
-        elif len(b) == 3:   #If 3 poits - quadratic interpolation
-            order = 2
-        else:               # if > 3 pts - cubic interpolation
-            order = 3
-
-        # get length of batch curve
-        v1s = np.array(b[1:])
-        v2s = np.array(b[:-1])
-        diff = v2s - v1s
-        lengths = [np.linalg.norm(x) for x in diff]
-        length = sum([np.linalg.norm(x) for x in diff]) #Get total length of distances between each point
-        
-        # Delta dictates how many 'evenly' spaced points the interpolation funciton will output.
-        # Roughly equal to 1/n_points-1 - (e.g. delta = 0.01 --> 1/100 --> 101 points).
-        # Delta must be < 1, so min() statement is too ensure this (bit hacky atm)
-        delta = min(target_length/length,0.99) 
-        
-        # call the interpolate curve function
-
-        curve = fit.interpolate_curve(b,order)
-        curve.delta = delta
-        evalpts = curve.evalpts     #evalpts is the new list of interpolated points
-        new_batch += evalpts        #stich batches back together as created
-    v1s = np.array(new_batch[1:])
-    v2s = np.array(new_batch[:-1])
-    diff = v2s - v1s
-    lengths = [np.linalg.norm(x) for x in diff]
-    # Evalpts is of type list, need to return as numpy array
-    return np.array(new_batch)
 
 """ 
 Dump ply/tow data into pickle object
 """
 def save_tows(obj, name):
+    """Dumpy ply/tow data into pickle object
+    
+    Parameters
+    ----------
+    obj : list(Ply) 
+        object to save
+    name : string
+        fileame to save it as
+    """    
+
     file_end = name + ".dat"
     file_name = '/'.join(['dat_files','batched',file_end])
     print(f"...saving at {file_name}")
@@ -285,33 +221,6 @@ def save_tows(obj, name):
     print("save successful")
 
 
-
-"""  
-Plot spline, surface, points are all just different plot functions
-Mainly used for debugging
-"""
-def plot_spline(tck):
-    xn, yn = np.mgrid[-100:100:500j, -100:100:500j]
-    zn = ip.bisplev(xn[:,0], yn[0,:], tck)
-
-    plt.figure()
-    plt.pcolor(xn, yn, zn)
-    plt.colorbar()
-    plt.show()
-
-def plot_points(points, ax):
-    #transform all coordinates
-    coords = []
-    for p in points:
-        coords.append(p.coord.vec)
-
-    axes = np.array(coords)
-    xx = axes[:,0]
-    yy = axes[:,1]
-    zz = axes[:,2]
-
-    ax.plot(xx, yy, zz) 
-    # ax.scatter(xx, yy, zz) 
 
 def plot_surface(L, R, ax):
     lx = np.array(L)
@@ -322,19 +231,28 @@ def plot_surface(L, R, ax):
 
     surf = ax.plot_surface(xx,yy,zz)
 
-def plot_offset(L, R, ax):
-    lx = np.array(L)
-    rx = np.array(R)
 
-    xx = lx[:,0]
-    yy = lx[:,1]
-    zz = lx[:,2]
-    plot = ax.plot(xx,yy,zz)
+def get_boundary():
+    """Helper function to generate boundary mesh. Currently
+    just hardcoded in. Comment out the shape you want to produce
+    
+    Returns
+    -------
+    Trimesh
+        boundary mesh volume
+    """    
+    
+    # Random rectangle
+    vecs = [[605.5, 54.5], [744.5, 54.5], [744.5, 5.5], [605.5, 5.5]]
+    faces = [[0,1,2],[2,3,0]]
+    height = 50
 
-    xx = rx[:,0]
-    yy = rx[:,1]
-    zz = rx[:,2]
-    plot = ax.plot(xx,yy,zz)
+    # Weave specimen
+    vecs = [[740, 70],[765,70],[765,-70],[740,-70]]
+    faces = [[0,1,2],[2,3,0]]
+    height = 50
+    bound = trimesh.creation.extrude_triangulation(vecs,faces,height)
+    return bound
 
 
 if __name__ == '__main__':
@@ -352,7 +270,6 @@ if __name__ == '__main__':
     marc_ply = main(plys, geom, stl=stl)
 
     save_tows(marc_ply, sys.argv[1])
-
 
 
 

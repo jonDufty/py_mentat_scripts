@@ -7,7 +7,7 @@ import winsound
 
 
 def main():
-
+	# For geenrating multiple files, specify file names in this list
 	files = [
 			# "test_flat",
 			# "test_flat_090_6",
@@ -24,8 +24,6 @@ def main():
 			# 'filament_winding'
 		]
 
-	print(files)
-
 	for file_name in files:
 		p("*new_model yes")
 		save_file(file_name)
@@ -34,6 +32,13 @@ def main():
 	winsound.PlaySound("SystemQuestion", winsound.SND_ALIAS)
 
 def generate_model(file):
+ """Main function for generating model in Marc
+ 
+ Parameters
+ ----------
+ file : String
+	 file name to open based on array above
+ """   	
 
 	plys = load_tows(file)
 	print("geom = ", file, "plies = ", len(plys))
@@ -64,14 +69,13 @@ def generate_model(file):
 	standard_material(T300, "all_existing")
 
 	assign_orientation()
-
 	
 	cb_index = cbody_index(plys)
 	create_contact_bodies(plys)
 
-	contact_table(0.1)
+	contact_table(0.01)
 
-	create_table(0,0.2)
+	create_table(0,0.5)
 
 	p("*save_model")
 
@@ -80,19 +84,19 @@ def generate_model(file):
 
 def create_tow_shell(tow_list):
 
-	# surf_set = "".join(["surf",str(tow_list[0]._id)])
-	print(tow_list[0].name())
 	total_divisions = sum([len(t.pts) for t in tow_list])
 	start = True
 
 	for tow in tow_list:
 
-		print("trimmed =",tow.trimmed)
-		if tow.trimmed== True:
-		 	continue
+		# Uncomment this if you want to skip tow trimming all together
+		# if tow.trimmed== True:
+		#  	continue
+
 		el_size = tow.w
 		curve_div = tow.w
-		# Generate curves from points on L,R of tow path
+		
+		# Generate curves from points on tow path
 		curves = []
 		curve_pts = []
 		for row in tow.pts:
@@ -100,43 +104,30 @@ def create_tow_shell(tow_list):
 				print("empty_row")
 				continue
 			curve = generate_curve(row)
-			
 			curves += curve
 		
 		if curves == "":
 			print("no points")
 			return
-		
-		print(curves)
 
-		
+
+		# Get point ids associated for new curves
 		for curve in curves:	
-			#print(curve)
 			npts = py_get_int("ncurve_points(%s)" % curve)
 			s = [py_get_int("curve_point_id(%s, %s)" % (curve, pt)) for pt in range(1, npts+1)]
 			s = sorted(list(set(s))) #remove duplicates
 			curve_pts += [s]
-			#print("curve", curve, s)
 		
+		# If the tow section (start/end) has been trimmed, then run the element edge algorithm
+		# Comment this if you don't want to trinagulate the edge meshes
 		if tow.trimmed == True:
 			element_algo(curve_pts, start=start)
 			if start == True: start=False
 			p("*clear_geometry")
 			p("*renumber_all")
 			
-		# 	continue
-		
-		# # p("*invisible_points all_visible")
-		
-		# p("*set_sweep_tolerance 0.25")
-		# p("*sweep_nodes")
-		# p("*all_visible")
-		# p("*renumber_points")
-		
-		# return
-		print("length of pts = ", " ".join([str(len(i)) for i in tow.pts]))
 			
-		# create surface using two guide curves
+		# create surface using 5 guide curves
 		print("surface")
 		p("*set_surface_type skin")
 		p("*set_trim_new_surfs y")
@@ -144,26 +135,12 @@ def create_tow_shell(tow_list):
 		p("%s %s" % (" ".join(curves), '#'))
 		
 		n_divisions = max([len(t) for t in tow.pts])
-		print("n_divisions = ", n_divisions)
-		# tow.trimmed=False
-		# continue
+
+		# Instead of trinagulating the boundary, this creates an automesh outer elements
+		# Did not produce as good results
 		if tow.trimmed == True:
 			
-			# if start == True:
-			# 	element_algo(curve_pts, start=True)
-			# 	start = False
-			# else:
-			# 	element_algo(curve_pts, start=False)
-
-			# p("@set($convert_entities,surfaces)")
-			# p("@set($convert_surfaces_method,convert_surface")
-			# p("*set_convert_uvdiv u %s" % str((n_divisions-1)/2))
-			# p("*set_convert_uvdiv v %s" % str((len(tow.pts)-1)/2))
-			# p("*convert_surfaces")
-			# p("%s #" % py_get_int("nsurfaces()"))
-
-
-			print("facet")
+			
 			p("@set($convert_surfaces_method,surface_faceted)")
 			p("*set_convert_remove_original off")
 			p("*set_curve_div_type_fix")
@@ -178,20 +155,19 @@ def create_tow_shell(tow_list):
 			
 			p("@set($automesh_surface_desc,facets)")
 			p("*pt_set_element_size %s" % str(el_size))
-			# if n_divisions < 3:
-			#	p("@set($automesh_surface_family,tria)")
-			#	p("*pt_trimesh_surf")
-			# else:
-			p("@set($automesh_surface_family,mixed)")
-			p("*pt_quadmesh_surf")
-			p("all_visible")
+			if n_divisions < 3:
+				p("@set($automesh_surface_family,tria)")
+				p("*pt_trimesh_surf")
+			else:
+				p("@set($automesh_surface_family,mixed)")
+				p("*pt_quadmesh_surf")
+				p("all_visible")
 			p("*clear_geometry")
 			
 		else:
-			print("convert")
 			
-			# if total_divisions > 1000:
-			# 	n_divisions *= 4
+			if total_divisions > 1000:
+				n_divisions *= 4
 			
 			p("@set($convert_entities,surfaces)")
 			p("@set($convert_surfaces_method,convert_surface")
@@ -205,8 +181,6 @@ def create_tow_shell(tow_list):
 		# p("*invisible_surface all_existing") 
 		
 	
-	print("set")
-
 	# Sweep nodes to remove duplicates at batch boundary
 	p("*set_sweep_tolerance 0.2")
 	p("*sweep_nodes")
@@ -217,6 +191,7 @@ def create_tow_shell(tow_list):
 	p(tow.name())
 	p("*all_visible")
 
+	# Clear geometry to simplify indexing for future tows
 	p("*clear_geometry")
 	p("*invisible_elements")
 	p("all_existing")
@@ -224,8 +199,45 @@ def create_tow_shell(tow_list):
 	p("select_clear")
 
 
+def generate_points(point):
+    p(point.send_coord())
+
+
+def generate_curve(pts):
+	
+	ni = int(py_get_float("npoints()"))
+	p("*add_points")
+
+	if len(pts) < 200:
+		pts_arr = [i.send_coord() for i in pts]
+		pts_arr = " ".join(pts_arr)
+		p(pts_arr)
+	else:
+		k = 0
+		while(k < len(pts)):
+			pts_arr = [i.send_coord() for i in pts[k:k+100]]
+			pts_arr = " ".join(pts_arr)
+			p(pts_arr)
+			k += 100
+		pts_arr = [i.send_coord() for i in pts[k:]]
+		pts_arr = " ".join(pts_arr)
+		p(pts_arr)
+	
+	nf = int(py_get_float("npoints()"))
+	pt_to_add = [str(i) for i in list(range(ni+1,nf+1))]
+	pt_to_add = " ".join(pt_to_add)
+	
+	# Form curve
+	p("*set_curve_type polyline")
+	p("*add_curves")
+	p(pt_to_add)
+	p("#")
+	id = int(py_get_float("ncurves()"))
+	
+	return str(id)	
+
+
 def edge_contact(cb_index, tolerance):
-	print("contact")
 	ctable_name = "ct_edge_face"
 	p("*new_contact_table")
 	p("*contact_table_name %s" % ctable_name)
@@ -291,45 +303,6 @@ def standard_material(m, elements):
     return
 
 
-def create_boundary(geometry):
-	boundaries = {
-		"flat": [
-			"625 60 0",
-			"625 5 0",
-			"725 5 0",
-			"725 60 0",
-		]
-	}
-	boundary = boundaries[geometry]
-	pi = py_get_int("npoints()")
-	pts = " ".join(boundary)
-	p("*add_points")
-	p(pts)
-	pf = py_get_int("npoints()")
-	
-	p("*set_curve_type polyline")
-	p("*add_curves")
-	pt_to_add = [str(i) for i in list(range(pi+1,pf+1))]
-	pt_to_add.append(str(pi+1))
-	p("%s #" % " ".join(pt_to_add))
-
-	p("@set($expand_entities,curves)")
-	p("*expand_remove")
-	p("*set_expand_translation z 200")
-	p("*expand_curves all_existing 1")
-
-	p("@set($move_entities,surfaces)")
-	p("@set($move_application,standard) *prog_option move:mode:translate")
-	p("*set_move_translation z -100")
-	p("*move_surfaces")
-	p("all_existing")
-
-	p("*store_surfaces")
-	p("boundary")
-	p("all_existing")
-
-
-
 def create_contact_bodies(plys):
 	p("*remove_empty_sets")
 	nsets = py_get_int("nsets()")
@@ -377,53 +350,6 @@ def save_file(file):
 	p('*set_save_formatted off *save_as_model "%s.mud" yes' % file)
 
 
-def generate_points(point):
-    p(point.send_coord())
-
-
-def generate_curve(pts):
-	
-	ni = int(py_get_float("npoints()"))
-	p("*add_points")
-	# for i in pts:
-	# 	generate_points(i)
-	if len(pts) < 200:
-		pts_arr = [i.send_coord() for i in pts]
-		pts_arr = " ".join(pts_arr)
-		p(pts_arr)
-	else:
-		k = 0
-		while(k < len(pts)):
-			pts_arr = [i.send_coord() for i in pts[k:k+100]]
-			pts_arr = " ".join(pts_arr)
-			p(pts_arr)
-			k += 100
-		pts_arr = [i.send_coord() for i in pts[k:]]
-		pts_arr = " ".join(pts_arr)
-		p(pts_arr)
-	
-	nf = int(py_get_float("npoints()"))
-	pt_to_add = [str(i) for i in list(range(ni+1,nf+1))]
-	pt_to_add = " ".join(pt_to_add)
-	
-	# Form curve
-	p("*set_curve_type polyline")
-	p("*add_curves")
-	p(pt_to_add)
-	p("#")
-	id = int(py_get_float("ncurves()"))
-	
-	return str(id)	
-
-
-
-def generate_elements(surf_name, n_elements):
-    pass
-
-
-
-
-
 
 # # Assuming an array of pts id
 def element_algo(a, start=False):
@@ -467,24 +393,11 @@ def element_algo(a, start=False):
 		if len(a[i+1]) > len(a[i]):
 			tris += [[a[i][j+1], a[i+1][j+2], a[i+1][j+1]]]		
 
-			#3: point at i,j+1 and i+1,j-1
-			# elif len(a[i+1]) == i:
-				# quad += [[a[i][j], a[i+1][j], a[i+1][j+1], a[i+1][j]]]
-	print(n_init)
-	# p("*set_element_class quad4")
-	# for q in quads:
-	#	p("*add_elements")
-	#	p(" ".join([str(i+n_init) for i in q]))
-	#	print(" ".join([str(i+n_init) for i in q]))
-	
-
 	p("*set_element_class tria3")
 	for t in tris:
 		p("*add_elements")
 		p(" ".join([str(i+n_init) for i in t]))
 		print(" ".join([str(i+n_init) for i in t]))
-
-	# print(surfs)
 
 	for q in quads:
 		pts = [str(i) for i in q]
@@ -503,16 +416,6 @@ def element_algo(a, start=False):
 	p("all_existing")
 
 	p("*renumber_nodes")
-
-
-
-		# p("all_selected")
-		# p("select_clear")
-		
-		# n_elems = py_get_int("nnodes()")
-		# p("%s %s %s %s" % (n_elems-3, n_elems-2, n_elems-1, n_elems))
-
-
 
 
 def create_table(initial, final):

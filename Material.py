@@ -3,7 +3,10 @@ class Material():
 		self.name = name
 
 class Orthotropic(Material):
-	def __init__(self,E1, E2, E3, Nu12, Nu23, Nu31, G12, G23, G31, name):
+    """
+	Helper class for storing material properties
+	"""
+	def __init__(self,E1, E2, E3, Nu12, Nu23, Nu31, G12, G23, G31, name):\
 		super().__init__(name)
 		self.E1 = E1
 		self.E2 = E2

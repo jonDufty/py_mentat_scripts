@@ -8,6 +8,36 @@ from geomdl import fitting as fit
 
 
 class Tow():
+    """
+    Class for representing tow obects
+    
+    Attributes
+    -------
+    _id : int
+        Tow id
+    points : list(Point)
+        Original point/vector data
+    w : float
+        Tow width (actually entered as w/2)
+    t : float
+        Tow thickness
+    new_pts : np.array(5,n,3)
+        Initially empty - used to contain all the updated/adjusted tow points
+        after interpolation/offsetting
+    new_normals : np.array(5,n,3)
+        Array of normal vectors associated with new_pts
+    trimmed points : dict{start,middle,end}\
+        Contains trimmed points where start/end contain rows of points with points partially
+        out of bounds, and middle contains points entirely inbounds
+    prev_pts : np.array(5,n,3)
+        stored points before interpolation in case of excpetion thrown in Mesh.py
+    pid : int
+        index of parent ply class
+    proj_dist : float
+        default distance to project tow points above base_mesh by
+    interp_dist : float
+        default distance to interpoalte between the tow poits
+    """
     t_id = 0
 
     def __init__(self, tow_w, tow_t, pid):
@@ -15,12 +45,11 @@ class Tow():
         self.points = []
         self.w = tow_w
         self.t = tow_t
-        self.coords = [] #This is for the interpolated values
-        self.new_pts = [[],[],[],[],[]] #Will eventually rename
+        self.coords = [] 
+        self.new_pts = [[],[],[],[],[]]
         self.new_normals = []
         self.trimmed_pts = {"start":[], "middle":[], "end":[]}
         self.prev_pts = []
-        self.mesh = None
         self.pid = pid
         self.proj_dist = 5*pid
         self.interp_dist = tow_w/2
@@ -35,17 +64,36 @@ class Tow():
     def _dec_id():
         Tow.t_id -= 1
 
-    # Add point to tow
     def add_point(self, pt):
+        """Add a point to a tow
+        
+        Parameters
+        ----------
+        pt : Point
+            point to add
+        
+        Returns
+        -------
+        boolean
+            point was succesfully added or not
+        """
         if pt is None:
             return False
         else:
             self.points.append(pt)
             return True
 
-    #Take tow path and offset in both directions perpendicular to direction vector
-    # Points stored in 5xn array    
+      
     def ortho_offset(self, w):
+        """Take tow path and offset in both directions perpendicular to direction vector
+        Points stored in 5xn array  
+        
+        Parameters
+        ----------
+        w : float
+            width of outer boundary to offset by
+        """
+
         for p in self.points:
             self.new_pts[0].append(p.ortho_offset(w))
             self.new_pts[1].append(p.ortho_offset(w/2))
@@ -53,26 +101,35 @@ class Tow():
             self.new_pts[3].append(p.ortho_offset(-w/2))
             self.new_pts[4].append(p.ortho_offset(-w))
 
-    # After new z_array is calculated, offsets each point in tow based
-    # on z_array value. Offsets in the direction of the normal vector
-    # note: normals in new_normal are pointing down (which is the opposite direction to the original normals)
-    def z_offset(self, z_array):
-        for i in range(len(self.new_pts)):
-            for j in range(len(self.new_normals)):
-                offset = self.new_normals[j] * z_array[i][j]
-                newpt = self.new_pts[i][j] - offset
-                self.new_pts[i][j] -= offset
-            
+
     def get_inner_points(self):
+        """Returns only inner points, excluding edge points
+        
+        Returns
+        -------
+        np.array(3,n-2,3)
+            inner points array
+        """
         return self.new_pts[1:-2][1:-2]
 
     def get_inner_normals(self):
+        """returns normals associated with inner points
+        
+        Returns
+        -------
+        np.array(3,n-2,3)
+            normal vector array
+        """
         return self.new_normals[1:-2]
     
-    # Calculate new normal vectors for interpolated points based on 
-    # the points in front and beside. Normals are facing down now
-    # Assuming the normal is constant along transverse points
+    
     def get_new_normals(self):
+        """
+        Calculate new normal vectors for interpolated points based on 
+        the points in front and beside. Normals are facing down now
+        Assuming the normal is constant along transverse points
+        """
+
         normals = [[],[],[],[],[]]
         for i in range(len(self.new_pts)-1):
             vecs = self.new_pts[i]      #current row
@@ -103,28 +160,22 @@ class Tow():
 
     # Convert into unit vector
     def normalize(self,v):
+        """Convert into a unit vector
+        
+        Parameters
+        ----------
+        v : np.array(3,1)
+            vector to convert
+        
+        Returns
+        -------
+        np.array(3,1)
+            adjsuted vector
+        """
         norm = np.linalg.norm(v)
         if norm == 0:
             return v
         return v / norm 
-
-    # Once interpolated, generate mesh to represent tow
-    def generate_tow_mesh(self):
-        mesh = Trimesh()
-        pts = np.array(self.new_pts)
-        for i in range(len(self.new_pts[0])-1):
-            v1 = self.new_pts[0][i]
-            v2 = self.new_pts[0][i+1]
-            v3 = self.new_pts[-1][i+1]
-            v4 = self.new_pts[-1][i]
-
-        # Form mesh square from 4 coordinates
-        mesh_segment = Trimesh(vertices=[v1,v2,v3,v4], faces = [[0,1,2,3]])
-        # Add segment to overall tow mesh
-        mesh = mesh.__add__(mesh_segment)
-        mesh = mesh.invert()
-
-        self.mesh = mesh
 
     # Create origins well above base mesh to avoid intersections
     # Inner --> determine whether to return only inner points or all points
@@ -152,12 +203,18 @@ class Tow():
         return origins
 
     
-    """  
-    Interpolate longitudinally along tow. Makes points as close to evenly spaced
-    as possible.
-    Target length is 0.25*tow_width
-    """
     def interpolate_tow_points(self, target=None):
+        """Takes in array of points, and interpolates in between them using geomdl package
+        Interpoaltes to a level such that the distance between points is roughly equal to 
+        $target_length (by default is t.w/2). Interpolates in batches, as large arrays can cause errors
+        
+        Parameters
+        ----------
+        target : float, optional
+            target distance for point spacing, by default None
+        
+        """
+        
         self.prev_pts = self.new_pts
 
         if target:

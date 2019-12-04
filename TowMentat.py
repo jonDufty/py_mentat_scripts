@@ -1,4 +1,9 @@
-# Isolated tow class to accomodate py_mentat modules
+"""  
+Isolated classes for use with the Marc Mentat interface
+Contian only point coordinate data and id metadata, so any package dependencies are remvoed
+"""
+
+
 class Ply_Mentat():
     def __init__(self, id, tows):
         self.id = id
@@ -33,6 +38,9 @@ class Point_Mentat():
         return self._vec
 
     def send_coord(self):
+        """ 
+        Returns coordinates as a space separated string for input into Marc
+        """
         pts = [str(i) for i in self._vec]
         return " ".join(pts)
     
