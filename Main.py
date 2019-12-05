@@ -32,7 +32,11 @@ def main():
 	winsound.PlaySound("SystemQuestion", winsound.SND_ALIAS)
 
 def generate_model(file):
- """Main function for generating model in Marc
+ """Main function for generating model in Marc.
+ Steps through following process
+ 1 - Generate tow shell elements
+ 2 - Specify geometry, material properties and orientation
+ 3 - Specify contact relations
  
  Parameters
  ----------
@@ -83,6 +87,15 @@ def generate_model(file):
 
 
 def create_tow_shell(tow_list):
+	"""Primary geometry creation function
+	Genrates a series of points for each sub-tow in tow_list.
+	Genreates curves -> surfaces -> elements
+	
+	Parameters
+	----------
+	tow_list : List(TowMentat)
+		Batched list of tows
+	"""   	
 
 	total_divisions = sum([len(t.pts) for t in tow_list])
 	start = True
@@ -204,7 +217,18 @@ def generate_points(point):
 
 
 def generate_curve(pts):
+	"""Given a set of points, generate a polyline curve
 	
+	Parameters
+	----------
+	pts : list(PointMentat)
+		Column of points in a tow
+	
+	Returns
+	-------
+	int
+		curve id
+	"""	
 	ni = int(py_get_float("npoints()"))
 	p("*add_points")
 
@@ -236,29 +260,14 @@ def generate_curve(pts):
 	
 	return str(id)	
 
-
-def edge_contact(cb_index, tolerance):
-	ctable_name = "ct_edge_face"
-	p("*new_contact_table")
-	p("*contact_table_name %s" % ctable_name)
-	p("*prog_option ctable:criterion:contact_distance")
-	p("*prog_param ctable:contact_distance %f" % tolerance)
-	p("*prog_option ctable:add_replace_mode:both")
-	p("*prog_option ctable:contact_type:glue")
-	p("@set($cta_crit_dist_action,list)")
-	
-	for c in cb_index.keys():
-		cb = " ".join(cb_index[c])
-		p("*ctable_add_replace_entries_body_list")
-		print("*ctable_add_replace_entries_body_list")
-		p("%s %s" % (cb, "#"))
-		print("%s %s" % (cb, "#"))
-		p("*interact_option retain_gaps:on")
-	return ctable_name
-
-
 def contact_table(tolerance):
-	print("contact")
+	"""Generate and populate contact table
+	
+	Parameters
+	----------
+	tolerance : float
+		contact distance tolerance
+	"""	
 	ctable_name = "ct_edge_face"
 	p("*new_contact_table")
 	p("*contact_table_name %s" % ctable_name)
@@ -272,8 +281,13 @@ def contact_table(tolerance):
 
 
 def assign_geometry(t):
-	print("assign_geom")
-
+	"""Specify geometry for elements	
+	
+	Parameters
+	----------
+	t : float
+		tow thickness
+	"""	
 	# Specify geometry for elements
 	p("*new_geometry")
 	p("*geometry_type mech_three_shell")
@@ -304,6 +318,7 @@ def standard_material(m, elements):
 
 
 def create_contact_bodies(plys):
+
 	p("*remove_empty_sets")
 	nsets = py_get_int("nsets()")
 	for i in range(1, nsets+1):
@@ -353,26 +368,34 @@ def save_file(file):
 
 # # Assuming an array of pts id
 def element_algo(a, start=False):
+ """algorithm to convert trimmed sections of a tow
+ to quad mesh, if 4 points are available, otherwise triangulates
+ the edge elements.
+ 
+ Parameters
+ ----------
+ a : [5,n] int array
+	 Array of point ids for points in trimmed section
+ start : bool, optional
+	 specifies whether the points are at the start or end, in order 
+	 to determine orientation, by default False
+ """   		
+	
 	p("*renumber_nodes")
 	# Create nodes first
 	n_init = py_get_int("nnodes()")
 	n_pts = py_get_int("npoints()")
 
 	nodes = [str(i+1) for i in range(n_pts)]
-	print("nodes=", nodes)
 
 	p("@set($convert_entities,points")
 	p("@set($convert_points_method,convert_points)")
 	p("*convert_points")
 	p("%s #" % (" ".join(nodes)))
 
-	surfs = []
 	quads = []
 	tris = []
 	
-
-	print(a)
-	print(start)
 	if start == True:
 		for i in a:
 			i.reverse()
@@ -382,7 +405,6 @@ def element_algo(a, start=False):
 		for j in range(len(a[i])-1):
 			# 1: point i,j+1 and i+1,j+1 --> quad mesh
 			if len(a[i+1]) > j+1:
-				# print(i,j,len(a[i]),len(a[i+1]),sep="\t")
 				q = [a[i][j], a[i][j+1], a[i+1][j+1], a[i+1][j]]
 				if start == True: q = q[2:4] + q[0:2]
 				quads += [q]
@@ -406,8 +428,6 @@ def element_algo(a, start=False):
 		p("*add_surfaces")
 		p("%s #" % (" ".join(pts)))
 
-	
-
 	p("@set($convert_entities,surfaces")
 	p("@set($convert_points_method,convert_surfaces)")
 	p("*set_convert_uvdiv u 1")
@@ -429,7 +449,6 @@ def create_table(initial, final):
     return	
 
 def p(s):
-    #print(s)
     py_send(s)
 
 
