@@ -33,9 +33,11 @@ FPM contains all the tow data. Each different 'design' has its own folder in the
 
 The file `FPMImport.py` is used to read in this data. The files were designed this way such that it would work with output types other than FPM, but this was the only one we had access to.
 
-The stl_files folder contains any stl files of the original 3D models that can be used by the script.
+The `stl_files` folder contains any stl files of the original 3D models that can be used by the script.
 
-The dat_files folder contains the serialised data structures output by the python interface to be read into the Marc interface
+The `dat_files` folder contains the serialised data structures output by the python interface to be read into the Marc interface
+
+The `finished_stl` contains stl files of the final base mesh, used just as a verification of the output of the 3D model after the pre-processing step
 
 ## Python Interface
 
@@ -49,6 +51,10 @@ The Python interface is the side that reads in the FPM data and pre-processes it
 ### Usage
 
 You specify the file as a command line argument, and if you wish to include an stl_file of the original model you add that as an additional argument as well.
+
+`python Import.py <filename>`
+
+or
 
 `python Import.py <filename> <stlfilename>`
 
