@@ -7,6 +7,8 @@ Its designed to run with Marc Mentat, and requires the python module, and has be
 
 ## Getting Started
 
+The scripts require python 3+.
+
 To run the two scripts requires the use of several packages, detailed below:
 
 - Numpy - for general numerical processing
@@ -25,6 +27,10 @@ The easiest way would be to run an anaconda distribution as a lot of these packa
 or
 
 `$ conda install -c condaforge *package*`
+
+You can also install all packages from the text file `requirements.txt` through the command (run from the root directory)
+
+`$ pip install -r requirements.txt`
 
 ## File Structure
 The file structure is set up with most of the relevant script files in the root directory. The only relevant folders are FPM, stl_files and dat_files
